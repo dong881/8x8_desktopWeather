@@ -11,6 +11,11 @@ Prerequisites
 -   `luma.led_matrix` library (install using `pip install luma.led_matrix`)
 -   Internet connection
 
+![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/6a0bf29a-e59f-48e8-adda-d70d049db4f9)
+
+Reference: https://luma-led-matrix.readthedocs.io/en/latest/install.html#gpio-pin-outs
+
+
 Configuration
 -------------
 
