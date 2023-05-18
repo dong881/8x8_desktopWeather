@@ -3,6 +3,16 @@ Smart Weather Display
 
 This Python script retrieves weather forecast data from the Central Weather Bureau (CWB) API and displays it on an 8x8 LED matrix using a MAX7219 driver.
 
+![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/b090fc50-3632-4c0f-9d17-944792c73374)
+
+For example (it is 7 o'clock):
+- [**3rd column**] The closest forecast period column will blink
+- [**3rd column**] Today from 6:00 to 9:00 the weather forecast temperature is 20-22 degrees
+- [**3rd column**] The probability of precipitation is higher than 60%
+- [**4th column**] Today from 9:00 to 12:00 the weather forecast temperature is 29-31 degrees
+- [**4th column**] The probability of precipitation is less than 60%
+- [**2nd column**] Tomorrow from 3:00 to 6:00 the weather forecast will be below 13 degrees
+
 Prerequisites
 -------------
 
