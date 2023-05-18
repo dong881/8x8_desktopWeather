@@ -19,15 +19,13 @@ Before running the script, make sure to set up the configuration by following th
 1.  Create a new file named `config.py` in the same folder as the script.
     
 2.  In `config.py`, define the WeatherAPI configuration with your CWB authorization token. It should look like this:
-    
-    python Copy code
-    
-    `# config.py
+    ```python=
+    # config.py
     
     WeatherAPI = {
         'Authorization': 'YOUR_CWB_AUTHORIZATION_TOKEN'
-    }` 
-    
+    }
+    ```
     Replace `'YOUR_CWB_AUTHORIZATION_TOKEN'` with your actual CWB authorization token.
     
 
@@ -67,6 +65,12 @@ Troubleshooting
 -   Make sure that the SPI interface is enabled on your Raspberry Pi. You can check and enable it using the `raspi-config` utility.
     
 -   If the LED matrix is not displaying properly, check the wiring connections and make sure you have installed the necessary libraries.
+
+-   Confirm the current time zone of your Raspberry Pi with `timedatectl status`, if the time zone is incorrect, you can use the following command to modify it:
+    ```cmd=
+    sudo timedatectl set-timezone <timezone>
+    ```
+    - Example of timezone: Asia/Taipei
 
 Acknowledgments
 ---------------
