@@ -19,6 +19,9 @@ Prerequisites
 -   Python 3.x
 -   Raspberry Pi (or any other compatible hardware) with SPI interface
 -   `luma.led_matrix` library (install using `pip install luma.led_matrix`)
+```bash
+pip install luma.led_matrix
+```
 -   Internet connection
 
 ![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/6a0bf29a-e59f-48e8-adda-d70d049db4f9)
@@ -41,8 +44,9 @@ Before running the script, make sure to set up the configuration by following th
         'Authorization': 'YOUR_CWB_AUTHORIZATION_TOKEN'
     }
     ```
-    Replace `'YOUR_CWB_AUTHORIZATION_TOKEN'` with your actual CWB authorization token.
+    Replace `'YOUR_CWB_AUTHORIZATION_TOKEN'` with [your actual CWB authorization token](https://opendata.cwb.gov.tw/user/authkey).
     
+![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/8c58272f-ec3d-41ad-81c8-a3b47bea6df2)
 
 Usage
 -----
