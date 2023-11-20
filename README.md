@@ -28,25 +28,46 @@ pip install luma.led_matrix
 
 Reference: https://luma-led-matrix.readthedocs.io/en/latest/install.html#gpio-pin-outs
 
-
-Configuration
--------------
+# Configuration
 
 Before running the script, make sure to set up the configuration by following these steps:
 
-1.  Create a new file named `config.py` in the same folder as the script.
-    
-2.  In `config.py`, define the WeatherAPI configuration with your CWB authorization token. It should look like this:
-    ```python=
+1. In `config.py`, define the WeatherAPI configuration with your CWB authorization token. It should look like this:
+    ```python
     # config.py
     
     WeatherAPI = {
         'Authorization': 'YOUR_CWB_AUTHORIZATION_TOKEN'
     }
     ```
-    Replace `'YOUR_CWB_AUTHORIZATION_TOKEN'` with [your actual CWB authorization token](https://opendata.cwb.gov.tw/user/authkey).
-    
-![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/8c58272f-ec3d-41ad-81c8-a3b47bea6df2)
+   Replace `'YOUR_CWB_AUTHORIZATION_TOKEN'` with [your actual CWB authorization token](https://opendata.cwb.gov.tw/user/authkey).
+
+![SPI Configuration](https://github.com/dong881/8x8_desktopWeather/assets/52557611/8c58272f-ec3d-41ad-81c8-a3b47bea6df2)
+
+
+2. Open the terminal and enable SPI (Serial Peripheral Interface) on your Raspberry Pi by adding the following line to the `/boot/config.txt` file:
+   ```bash
+   sudo nano /boot/config.txt
+   ```
+   Add or uncomment the line:
+   ```bash
+   dtparam=spi=on
+   ```
+   Save and exit the editor.
+
+3. Reboot your Raspberry Pi:
+   ```bash
+   sudo reboot
+   ```
+
+4. Verify that SPI is successfully enabled by checking for SPI devices:
+   ```bash
+   ls /dev/spi*
+   ```
+
+   You should see outputs like `/dev/spidev0.0` or `/dev/spidev0.1` if SPI is enabled.
+
+Configuration is now complete, and SPI is ready for use.
 
 Usage
 -----
