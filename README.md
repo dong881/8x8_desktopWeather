@@ -18,11 +18,20 @@ Prerequisites
 
 -   Python 3.x
 -   Raspberry Pi (or any other compatible hardware) with SPI interface
--   `luma.led_matrix` library (install using `pip install luma.led_matrix`)
-```bash
-pip install luma.led_matrix
-```
 -   Internet connection
+
+Installation
+-------------
+
+Install all required dependencies with a single command:
+
+```bash
+pip install -r requirements.txt
+```
+
+This will install:
+- `luma.led_matrix` - LED Matrix control library for Raspberry Pi
+- `requests` - HTTP library for making API requests to weather service
 
 ![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/6a0bf29a-e59f-48e8-adda-d70d049db4f9)
 

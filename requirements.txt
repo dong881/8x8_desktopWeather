@@ -1,0 +1,8 @@
+# Requirements for 8x8 Desktop Weather Display
+# This project displays weather forecast on an 8x8 LED matrix using MAX7219
+
+# LED Matrix control library for Raspberry Pi
+luma.led_matrix>=1.7.0
+
+# HTTP library for making API requests to weather service
+requests>=2.28.0
