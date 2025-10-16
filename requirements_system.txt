@@ -1,0 +1,24 @@
+# System-level dependencies for 8x8 Desktop Weather Display
+# These packages need to be installed via apt-get or the system package manager
+
+# Python 3 and pip
+python3
+python3-pip
+python3-dev
+
+# SPI interface libraries
+python3-spidev
+
+# Image processing libraries (required by luma.led-matrix)
+libjpeg-dev
+zlib1g-dev
+libfreetype6-dev
+liblcms2-dev
+libopenjp2-7
+libtiff5
+
+# Build tools (required for compiling Python packages)
+build-essential
+
+# Optional: Git for version control
+git
