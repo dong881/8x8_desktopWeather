@@ -24,6 +24,23 @@ pip install luma.led_matrix
 ```
 -   Internet connection
 
+## Installation Guides
+
+For detailed installation instructions for your specific operating system, please refer to:
+
+- **[Installation Guide for Raspberry Pi OS (PiOS)](INSTALL_PiOS.md)** - Complete step-by-step guide for Raspberry Pi OS
+- **[Installation Guide for DietPi](INSTALL_DietPi.md)** - Optimized instructions for DietPi OS
+
+Quick install using requirements files:
+
+```bash
+# Install system dependencies (PiOS/DietPi)
+cat requirements_system.txt | grep -v '^#' | grep -v '^$' | xargs sudo apt-get install -y
+
+# Install Python dependencies
+pip3 install -r requirements.txt
+```
+
 ![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/6a0bf29a-e59f-48e8-adda-d70d049db4f9)
 
 Reference: https://luma-led-matrix.readthedocs.io/en/latest/install.html#gpio-pin-outs
