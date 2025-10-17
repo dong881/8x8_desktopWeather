@@ -53,7 +53,7 @@ This script handles system updates, dependencies, SPI setup, virtual environment
    Verify: `ls /dev/spi*` (should show `/dev/spidev0.0`).
 
 4. **Configure API**:
-   Get token from https://opendata.cwb.gov.tw/user/authkey.
+   Get token from https://opendata.cwa.gov.tw/user/authkey.
    Edit `config.py`:
    ```python
    WeatherAPI = {'Authorization': 'YOUR_TOKEN'}
@@ -86,7 +86,7 @@ Before running the script, make sure to set up the configuration by following th
         'Authorization': 'YOUR_CWB_AUTHORIZATION_TOKEN'
     }
     ```
-   Replace `'YOUR_CWB_AUTHORIZATION_TOKEN'` with [your actual CWB authorization token](https://opendata.cwb.gov.tw/user/authkey).
+   Replace `'YOUR_CWB_AUTHORIZATION_TOKEN'` with [your actual CWB authorization token](https://opendata.cwa.gov.tw/user/authkey).
 
 ![SPI Configuration](https://github.com/dong881/8x8_desktopWeather/assets/52557611/8c58272f-ec3d-41ad-81c8-a3b47bea6df2)
 
