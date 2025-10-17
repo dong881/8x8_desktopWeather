@@ -21,6 +21,10 @@ Prerequisites
 -   `luma.led_matrix` library (install using `pip install luma.led_matrix`)
 ```bash
 pip install luma.led_matrix
+pip install requests
+pip install RPi.GPIO
+pip install spidev
+
 ```
 -   Internet connection
 
