@@ -92,7 +92,7 @@ echo "Setting timezone to Asia/Taipei..."
 sudo timedatectl set-timezone Asia/Taipei
 
 # Step 9: Create systemd service
-SERVICE_FILE="/etc/systemd/system/smartweather.service"
+SERVICE_FILE="/etc/systemd/system/weather.service"
 VENV_DIR_ABS="$(cd "$VENV_DIR" && pwd)"
 PROJECT_DIR_ABS="$(cd "$PROJECT_DIR" && pwd)"
 echo "Creating systemd service..."
@@ -105,7 +105,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$PROJECT_DIR_ABS
-ExecStart=$VENV_DIR_ABS/bin/python3 $PROJECT_DIR_ABS/SmartWeather.py
+ExecStart=$VENV_DIR_ABS/bin/python3 $PROJECT_DIR_ABS/Weather.py
 Restart=always
 RestartSec=10
 
@@ -116,8 +116,8 @@ EOF
 # Step 10: Enable and start service
 echo "Enabling and starting service..."
 sudo systemctl daemon-reload
-sudo systemctl enable smartweather.service
-sudo systemctl start smartweather.service
+sudo systemctl enable weather.service
+sudo systemctl start weather.service
 
 echo "Installation complete! Service is running."
-echo "Check status with: sudo systemctl status smartweather.service"
+echo "Check status with: sudo systemctl status weather.service"
