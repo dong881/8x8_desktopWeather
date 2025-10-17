@@ -15,7 +15,7 @@ zlib1g-dev
 libfreetype6-dev
 liblcms2-dev
 libopenjp2-7
-libtiff5
+libtiff-dev
 
 # Build tools (required for compiling Python packages)
 build-essential
