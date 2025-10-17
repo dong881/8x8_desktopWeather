@@ -32,6 +32,8 @@ sudo apt-get upgrade -y
 
 # Step 2: Install system dependencies
 echo "Installing system dependencies..."
+# Fix invalid package name libtiff5 -> libtiff-dev
+sed -i 's/libtiff5/libtiff-dev/g' requirements_system.txt
 cat requirements_system.txt | grep -v '^#' | grep -v '^$' | xargs sudo apt-get install -y
 
 # Step 3: Enable SPI (automated via config file)
