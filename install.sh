@@ -103,7 +103,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$PROJECT_DIR
-ExecStart="$VENV_DIR/bin/python3 $PROJECT_DIR/SmartWeather.py"
+ExecStart="/bin/bash -c 'source $VENV_DIR/bin/activate && python3 $PROJECT_DIR/SmartWeather.py'"
 Restart=always
 RestartSec=10
 
