@@ -18,32 +18,57 @@ Prerequisites
 
 -   Python 3.x
 -   Raspberry Pi (or any other compatible hardware) with SPI interface
--   `luma.led_matrix` library (install using `pip install luma.led_matrix`)
-```bash
-pip install luma.led_matrix
-pip install requests
-pip install RPi.GPIO
-pip install spidev
-
-```
 -   Internet connection
 
-## Installation Guides
+## Installation
 
-For detailed installation instructions for your specific operating system, please refer to:
+### Quick Automated Setup (Recommended)
 
-- **[Installation Guide for Raspberry Pi OS (PiOS)](INSTALL_PiOS.md)** - Complete step-by-step guide for Raspberry Pi OS
-- **[Installation Guide for DietPi](INSTALL_DietPi.md)** - Optimized instructions for DietPi OS
-
-Quick install using requirements files:
+Run the automated script for PiOS or DietPi:
 
 ```bash
-# Install system dependencies (PiOS/DietPi)
-cat requirements_system.txt | grep -v '^#' | grep -v '^$' | xargs sudo apt-get install -y
-
-# Install Python dependencies
-pip3 install -r requirements.txt
+cd 8x8_desktopWeather
+bash install.sh
 ```
+
+This script handles system updates, dependencies, SPI setup, virtual environment, API config, and service creation.
+
+### Manual Setup (If Script Fails)
+
+1. **Update System**:
+   ```bash
+   sudo apt-get update && sudo apt-get upgrade -y
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   sudo apt-get install -y python3 python3-pip python3-dev python3-spidev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libopenjp2-7 libtiff5 build-essential git
+   pip3 install -r requirements.txt
+   ```
+
+3. **Enable SPI**:
+   - **PiOS**: Run `sudo raspi-config`, go to `3 Interface Options` → `I4 SPI` → `Yes`.
+   - **DietPi**: Run `dietpi-config`, go to `Advanced Options` → `SPI` → `Enable`.
+   Then reboot: `sudo reboot`.
+   Verify: `ls /dev/spi*` (should show `/dev/spidev0.0`).
+
+4. **Configure API**:
+   Get token from https://opendata.cwb.gov.tw/user/authkey.
+   Edit `config.py`:
+   ```python
+   WeatherAPI = {'Authorization': 'YOUR_TOKEN'}
+   ```
+
+5. **Set Timezone**:
+   ```bash
+   sudo timedatectl set-timezone Asia/Taipei
+   ```
+
+6. **Run Manually**:
+   ```bash
+   python3 SmartWeather.py
+   ```
+   Or create a service (see script for details).
 
 ![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/6a0bf29a-e59f-48e8-adda-d70d049db4f9)
 
