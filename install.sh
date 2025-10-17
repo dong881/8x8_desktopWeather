@@ -79,7 +79,7 @@ pip install -r requirements.txt
 
 # Step 7: Configure Weather API
 echo "Configuring Weather API..."
-read -p "Enter your CWB authorization token: " TOKEN
+read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
 cat > config.py << EOF
 # config.py
 WeatherAPI = {
@@ -93,6 +93,8 @@ sudo timedatectl set-timezone Asia/Taipei
 
 # Step 9: Create systemd service
 SERVICE_FILE="/etc/systemd/system/smartweather.service"
+VENV_DIR_ABS="$(cd "$VENV_DIR" && pwd)"
+PROJECT_DIR_ABS="$(cd "$PROJECT_DIR" && pwd)"
 echo "Creating systemd service..."
 sudo tee "$SERVICE_FILE" > /dev/null << EOF
 [Unit]
@@ -102,8 +104,8 @@ After=network.target
 [Service]
 Type=simple
 User=$USER
-WorkingDirectory=$PROJECT_DIR
-ExecStart="/bin/bash -c 'source $VENV_DIR/bin/activate && python3 $PROJECT_DIR/SmartWeather.py'"
+WorkingDirectory=$PROJECT_DIR_ABS
+ExecStart=$VENV_DIR_ABS/bin/python3 $PROJECT_DIR_ABS/SmartWeather.py
 Restart=always
 RestartSec=10
 
