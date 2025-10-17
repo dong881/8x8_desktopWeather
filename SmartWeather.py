@@ -10,6 +10,8 @@ from datetime import datetime, timedelta
 import sys
 # Import the configuration from config.py
 from config import WeatherAPI
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 Authorization = ''
 # Access the Authorization value from the configuration
@@ -29,21 +31,22 @@ def get_weather_forecast(TODAY_Date):
     type = "T,PoP6h" #溫度(3h)、降雨機率(6h)
     NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
     print(NowTime)
-    url = f'https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization='+Authorization+'&limit=8&locationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName='+ type +'&timeFrom='+today+'T'+NowTime+'%3A00%3A00&timeTo='+tomorrow+'T'+NowTime+'%3A00%3A00'
+    url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization='+Authorization+'&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName='+ type +'&timeFrom='+today+'T'+NowTime+'%3A00%3A00&timeTo='+tomorrow+'T'+NowTime+'%3A00%3A00'
     # 用 requests 套件發送 GET 請求獲取資料
-    response = requests.get(url)
+    # print(url)
+    response = requests.get(url,verify=False)
 
     # 解析 JSON 資料
     data = response.json()
     # print(data)
-    PoPdata = data["records"]["locations"][0]["location"][0]["weatherElement"][1]["time"]
-    T_data = data["records"]["locations"][0]["location"][0]["weatherElement"][0]["time"]
+    PoPdata = data["records"]["Locations"][0]["Location"][0]["WeatherElement"][1]["Time"]
+    T_data = data["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
     # 從資料中提取出每個時間段的平均溫度
     print(PoPdata)
     print(T_data)
 
-    TDataList = [d['elementValue'][0]['value'] for d in T_data]
-    PopDataList = [d['elementValue'][0]['value'] for d in PoPdata]
+    TDataList = [list(d['ElementValue'][0].values())[0] for d in T_data]
+    PopDataList = [list(d['ElementValue'][0].values())[0] for d in PoPdata]
     print(TDataList)
     print(PopDataList)
     return temperature_to_led_levels(TDataList),PoP_to_led_levels(PopDataList)
