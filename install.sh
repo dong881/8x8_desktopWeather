@@ -48,13 +48,13 @@ else
 fi
 
 # Step 4: Reboot notification (script will stop here; user must reboot and rerun)
-echo "SPI enabled. Please reboot your system and rerun this script to continue."
-read -p "Press Enter after reboot to continue..."
-# After reboot, verify SPI
 if [ ! -e /dev/spidev0.0 ]; then
-    echo "Error: SPI not detected. Please check configuration."
+    # verify SPI
+    echo "Please reboot your system and rerun this script to continue."
+    read -p "Press Enter to continue..."
     exit 1
 fi
+echo "SPI enabled."
 
 # Step 5: Create virtual environment in parent directory (skip if exists)
 echo "Checking virtual environment at $VENV_DIR..."
@@ -103,7 +103,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$PROJECT_DIR
-ExecStart=$VENV_DIR/bin/python3 $PROJECT_DIR/SmartWeather.py
+ExecStart="$VENV_DIR/bin/python3 $PROJECT_DIR/SmartWeather.py"
 Restart=always
 RestartSec=10
 
