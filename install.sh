@@ -56,9 +56,21 @@ if [ ! -e /dev/spidev0.0 ]; then
     exit 1
 fi
 
-# Step 5: Create virtual environment in parent directory
-echo "Creating virtual environment at $VENV_DIR..."
-python3 -m venv "$VENV_DIR"
+# Step 5: Create virtual environment in parent directory (skip if exists)
+echo "Checking virtual environment at $VENV_DIR..."
+if [ -d "$VENV_DIR" ] && [ -f "$VENV_DIR/bin/activate" ]; then
+    echo "Virtual environment already exists at $VENV_DIR. Skipping creation."
+else
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "Error: python3 not found. Please install Python 3."
+        exit 1
+    fi
+    echo "Creating virtual environment at $VENV_DIR..."
+    python3 -m venv "$VENV_DIR"
+    echo "Virtual environment created at $VENV_DIR."
+fi
+
+# Activate the virtual environment
 source "$VENV_DIR/bin/activate"
 
 # Step 6: Install Python dependencies in venv
