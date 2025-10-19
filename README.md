@@ -8,7 +8,8 @@ This Python script retrieves weather forecast data from the Central Weather Admi
 This project now includes a **modular architecture** with advanced features and a **Web Configuration Interface**!
 
 ### ✨ New Features
-- **Web Configuration Interface** (Port 6666): Modern, minimalist web UI to configure and monitor the display in real-time
+- **Web Configuration Interface** (Port 5000): Modern, minimalist web UI to configure and monitor the display in real-time
+- **Automatic Night Mode**: LED brightness automatically adjusts based on time of day (dimmer at night, brighter during day)
 - **Multiple API Integration**: Weather forecast, real-time observation, earthquake alerts, UV index
 - **8x8 Icon Library**: Visual weather icons (sunny, rainy, cloudy, etc.) - all properly centered and filling 8x8 pixels
 - **Animation System**: Rain drops, sun shine, earthquake shake effects
@@ -19,10 +20,10 @@ This project now includes a **modular architecture** with advanced features and 
 
 ### 🌐 Web Configuration Interface
 
-Access the web interface at `http://[your-pi-ip]:6666` to:
+Access the web interface at `http://[your-pi-ip]:5000` to:
 - **Monitor** current temperature, humidity, and weather conditions in real-time
 - **Configure** display modes, page durations, and carousel content
-- **Adjust** brightness and update intervals
+- **Adjust** brightness (manual or automatic night mode) and update intervals
 - **Force** immediate weather or earthquake data updates
 - **View** system status with auto-refreshing display
 
@@ -39,7 +40,7 @@ The interface features a modern, minimalist design that works on desktop and mob
 python3 main.py
 
 # Access web configuration interface
-# Open browser: http://[your-pi-ip]:6666
+# Open browser: http://[your-pi-ip]:5000
 
 # Or run original version (backward compatible)
 python3 test/Weather.py
@@ -222,7 +223,7 @@ The enhanced version provides multiple data sources, visual icons, smart alerts,
 
 3.  Access the web configuration interface:
     ```
-    Open browser: http://[your-pi-ip]:6666
+    Open browser: http://[your-pi-ip]:5000
     ```
 
 4.  The system will:

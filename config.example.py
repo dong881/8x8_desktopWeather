@@ -10,7 +10,15 @@ WeatherAPI = {
 # Optional: Display Configuration
 DisplayConfig = {
     # LED brightness (0-255, default: 30)
+    # Set to None to enable automatic brightness based on time of day
     'brightness': 30,
+    
+    # Auto brightness mode (default: True)
+    # When enabled, LED brightness automatically adjusts:
+    #   - Night (0-5, 22-23): Very dim (10-30)
+    #   - Dawn/Dusk (6-9, 18-21): Medium (50-150)
+    #   - Day (10-17): Full brightness (200-255)
+    'auto_brightness': True,
     
     # Update intervals in seconds
     'weather_update_interval': 1800,     # 30 minutes

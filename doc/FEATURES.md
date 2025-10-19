@@ -50,13 +50,21 @@ src/
 - **警報模式** (Alert): 緊急訊息中斷顯示
 - **傳統模式** (Bar): 原始溫度條圖
 
-#### 6. 智能警報系統 (Intelligent Alert System)
+#### 6. 自動亮度調整 (Automatic Brightness Control)
+- **夜間模式**: 自動根據時間調整 LED 亮度
+  - 深夜 (0-5, 22-23): 極低亮度 (10-30)
+  - 黎明/黃昏 (6-9, 18-21): 中等亮度 (50-150)
+  - 白天 (10-17): 最高亮度 (200-255)
+- **手動控制**: 可透過 Web 介面手動設定亮度
+- **省電節能**: 夜間自動降低亮度，延長 LED 壽命
+
+#### 7. 智能警報系統 (Intelligent Alert System)
 優先級分層：
 - **Level 1 緊急**: 地震（60秒，震動動畫）
 - **Level 2 重要**: 颱風、豪雨（30秒，閃爍警示）
 - **Level 3 日常**: 天氣、溫度、空氣品質（正常輪播）
 
-#### 7. 資料快取與容錯 (Caching & Error Handling)
+#### 8. 資料快取與容錯 (Caching & Error Handling)
 - 本地 JSON 快取系統
 - API 失敗時使用快取資料
 - 自動重試機制
@@ -85,6 +93,7 @@ WeatherAPI = {
 # 進階配置（可選）
 DisplayConfig = {
     'brightness': 30,           # LED 亮度 (0-255)
+    'auto_brightness': True,    # 自動調整亮度（夜間自動降低）
     'update_interval': 1800,    # 天氣更新間隔（秒）
     'earthquake_check': 300,    # 地震檢查間隔（秒）
     'page_duration': 15,        # 頁面顯示時間（秒）
