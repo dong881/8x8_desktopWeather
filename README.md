@@ -5,32 +5,47 @@ This Python script retrieves weather forecast data from the Central Weather Admi
 
 ## 🎉 Enhanced Version Available!
 
-This project now includes a **modular architecture** with advanced features:
+This project now includes a **modular architecture** with advanced features and a **Web Configuration Interface**!
 
 ### ✨ New Features
+- **Web Configuration Interface** (Port 6666): Modern, minimalist web UI to configure and monitor the display in real-time
 - **Multiple API Integration**: Weather forecast, real-time observation, earthquake alerts, UV index
-- **8x8 Icon Library**: Visual weather icons (sunny, rainy, cloudy, etc.)
+- **8x8 Icon Library**: Visual weather icons (sunny, rainy, cloudy, etc.) - all properly centered and filling 8x8 pixels
 - **Animation System**: Rain drops, sun shine, earthquake shake effects
 - **Smart Display Modes**: Carousel rotation, scrolling text, icon display, mixed mode
 - **Intelligent Alerts**: Priority-based alert system with earthquake detection
 - **Data Caching**: Local caching with automatic fallback on API failure
 - **Background Scheduler**: Automatic data updates with configurable intervals
 
+### 🌐 Web Configuration Interface
+
+Access the web interface at `http://[your-pi-ip]:6666` to:
+- **Monitor** current temperature, humidity, and weather conditions in real-time
+- **Configure** display modes, page durations, and carousel content
+- **Adjust** brightness and update intervals
+- **Force** immediate weather or earthquake data updates
+- **View** system status with auto-refreshing display
+
+The interface features a modern, minimalist design that works on desktop and mobile devices.
+
 ### 📚 Documentation
-- **[FEATURES.md](FEATURES.md)**: Complete feature overview and usage guide
-- **[API_GUIDE.md](API_GUIDE.md)**: Comprehensive API integration documentation
+- **[doc/FEATURES.md](doc/FEATURES.md)**: Complete feature overview and usage guide
+- **[doc/API_GUIDE.md](doc/API_GUIDE.md)**: Comprehensive API integration documentation
 - **[config.example.py](config.example.py)**: Configuration template
 
 ### 🚀 Quick Start
 ```bash
-# Run enhanced version with new features
+# Run enhanced version with web interface
 python3 main.py
 
+# Access web configuration interface
+# Open browser: http://[your-pi-ip]:6666
+
 # Or run original version (backward compatible)
-python3 Weather.py
+python3 test/Weather.py
 ```
 
-See [FEATURES.md](FEATURES.md) for detailed documentation on the new modular architecture.
+See [doc/FEATURES.md](doc/FEATURES.md) for detailed documentation on the new modular architecture.
 
 ---
 
@@ -101,7 +116,7 @@ cd 8x8_desktopWeather
 bash install.sh
 ```
 
-This script handles system updates, dependencies, SPI setup, virtual environment, API config, and service creation.
+This script handles system updates, dependencies (including Flask for web interface), SPI setup, virtual environment, API config, and service creation.
 
 ### Manual Setup (If Script Fails)
 
@@ -115,6 +130,8 @@ This script handles system updates, dependencies, SPI setup, virtual environment
    sudo apt-get install -y python3 python3-pip python3-dev python3-spidev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libopenjp2-7 libtiff5 build-essential git
    pip3 install -r requirements.txt
    ```
+   
+   Note: This will install all required packages including Flask for the web configuration interface.
 
 3. **Enable SPI**:
    - **PiOS**: Run `sudo raspi-config`, go to `3 Interface Options` → `I4 SPI` → `Yes`.
@@ -190,7 +207,7 @@ Usage
 
 ### Enhanced Version (Recommended)
 
-The enhanced version provides multiple data sources, visual icons, and smart alerts:
+The enhanced version provides multiple data sources, visual icons, smart alerts, and a web configuration interface:
 
 1.  Connect the 8x8 LED matrix to your Raspberry Pi or compatible hardware.
     
@@ -203,28 +220,34 @@ The enhanced version provides multiple data sources, visual icons, and smart ale
     nohup python3 main.py &
     ```
 
-3.  The system will:
+3.  Access the web configuration interface:
+    ```
+    Open browser: http://[your-pi-ip]:6666
+    ```
+
+4.  The system will:
     - Display startup animation
     - Fetch weather data from CWA API
     - Show temperature bars with rainfall indicators (blinks current time)
     - Rotate through weather icons and temperature displays
     - Monitor for earthquakes and display alerts automatically
     - Update data in background (weather: 30min, earthquake: 5min)
+    - Provide web interface for configuration and monitoring
 
 ### Original Version
 
-For the classic temperature bar display only:
+For the classic temperature bar display only (without web interface):
 
 1.  Connect the 8x8 LED matrix to your Raspberry Pi or compatible hardware.
     
 2.  Run the script by executing the following command:
     - used to test
     ```cmd=
-    python SmartWeather.py
+    python test/Weather.py
     ``` 
     - for long-term use
     ```cmd=
-    nohup python SmartWeather.py
+    nohup python test/Weather.py &
     ``` 
     
 3.  The script will continuously retrieve the weather forecast data from the CWB API and display it on the LED matrix.

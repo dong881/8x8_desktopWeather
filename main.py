@@ -1,6 +1,6 @@
 """
 Enhanced 8x8 Weather Display with Modular Architecture
-Main application entry point
+Main application entry point with Web Configuration Interface
 """
 
 import sys
@@ -21,6 +21,8 @@ from src.display.icons import WeatherIcons
 from src.utils.scheduler import ContentScheduler
 from src.utils.logger import setup_logger
 
+# Import web configuration interface
+from web_config import start_web_server
 
 # Setup logger
 logger = setup_logger("weather_display")
@@ -118,6 +120,8 @@ class EnhancedWeatherDisplay:
         
         if self.observation_data:
             logger.info(f"Observation: {self.observation_data}")
+        else:
+            logger.warning("Observation data processing returned None or invalid data")
     
     def create_display_pages(self):
         """Create display pages for content rotation"""
@@ -135,11 +139,11 @@ class EnhancedWeatherDisplay:
                             draw.point((i, 7), fill="white")
         
         self.display_manager.add_page(
-            DisplayPage("temperature_bars", show_temp_bars, duration=15.0, priority=3)
+            DisplayPage("temperature_bars", show_temp_bars, duration=10.0, priority=3)
         )
         
         # Page 2: Weather icon display
-        if self.observation_data:
+        if self.observation_data and self.observation_data.get('weather') != 'N/A':
             weather_desc = self.observation_data.get('weather', '')
             icon_name = self.processor.get_weather_icon_name(weather_desc)
             
@@ -149,11 +153,11 @@ class EnhancedWeatherDisplay:
                     WeatherIcons.draw_icon(draw, 0, 0, icon)
             
             self.display_manager.add_page(
-                DisplayPage("weather_icon", show_weather_icon, duration=10.0, priority=3)
+                DisplayPage("weather_icon", show_weather_icon, duration=8.0, priority=3)
             )
         
         # Page 3: Temperature display
-        if self.observation_data:
+        if self.observation_data and self.observation_data.get('temperature', 0) > 0:
             temp = int(self.observation_data.get('temperature', 0))
             
             def show_temperature(device):
@@ -173,7 +177,7 @@ class EnhancedWeatherDisplay:
                         WeatherIcons.draw_digit(draw, 6, 0, temp_str[1])
             
             self.display_manager.add_page(
-                DisplayPage("temperature_display", show_temperature, duration=10.0, priority=3)
+                DisplayPage("temperature_display", show_temperature, duration=8.0, priority=3)
             )
     
     def run(self):
@@ -194,12 +198,17 @@ class EnhancedWeatherDisplay:
             logger.info("Starting background scheduler...")
             self.scheduler.start()
             
+            # Start web configuration interface
+            logger.info("Starting web configuration interface on port 6666...")
+            start_web_server(self.display_manager, self.scheduler, self)
+            
             # Create display pages
             self.create_display_pages()
             
             # Main display loop
             logger.info("Entering main display loop...")
             update_counter = 0
+            last_page_rotation = time.time()
             
             while True:
                 try:
@@ -209,7 +218,7 @@ class EnhancedWeatherDisplay:
                     
                     if new_hour_index != self.current_hour_index:
                         self.current_hour_index = new_hour_index
-                        logger.info(f"Hour changed, new index: {new_hour_index}")
+                        logger.info(f"Hour changed to {now.hour}:00, display index updated to: {new_hour_index}")
                     
                     # Display temperature bars with blinking current column
                     if self.temperature_levels and self.rainfall_levels:
@@ -223,12 +232,16 @@ class EnhancedWeatherDisplay:
                     update_counter += 1
                     time.sleep(1)
                     
-                    # Every 30 seconds, rotate through other display pages
-                    if update_counter % 30 == 0:
+                    # Rotate through display pages every 20 seconds
+                    current_time = time.time()
+                    if current_time - last_page_rotation >= 20:
                         self.create_display_pages()
-                        for _ in range(2):  # Show 2 alternate pages
-                            if len(self.display_manager.pages) > 1:
-                                self.display_manager.rotate_pages()
+                        if len(self.display_manager.pages) > 1:
+                            # Show 2 alternate pages with proper timing
+                            self.display_manager.rotate_pages()
+                            time.sleep(0.5)  # Brief pause between pages
+                            self.display_manager.rotate_pages()
+                        last_page_rotation = current_time
                 
                 except KeyboardInterrupt:
                     raise

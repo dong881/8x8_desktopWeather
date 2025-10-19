@@ -208,11 +208,12 @@ class DataProcessor:
         """
         desc = weather_description.lower()
         
-        if '晴' in desc or 'clear' in desc or 'sunny' in desc:
+        # Check for thunderstorm first (before rain)
+        if '雷' in desc or 'thunder' in desc:
+            return 'thunderstorm'
+        elif '晴' in desc or 'clear' in desc or 'sunny' in desc:
             return 'sunny'
         elif '雨' in desc or 'rain' in desc:
-            if '雷' in desc or 'thunder' in desc:
-                return 'thunderstorm'
             return 'rainy'
         elif '雪' in desc or 'snow' in desc:
             return 'snowy'
