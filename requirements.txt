@@ -12,3 +12,6 @@ Pillow>=8.0.0
 
 # Security warning suppression
 urllib3>=1.26.0
+
+# Web interface
+Flask>=2.0.0

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8x8 Weather Display - Configuration</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .card h2 {
+            font-size: 1.5em;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #667eea;
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .status-item {
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .status-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 8px;
+        }
+
+        .status-value {
+            font-size: 2em;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .status-unit {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #495057;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #e9ecef;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .carousel-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .carousel-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+        }
+
+        .carousel-item input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .refresh-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .status-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🌤️ 8x8 Weather Display</h1>
+            <p>Configuration & Monitoring Dashboard</p>
+        </div>
+
+        <div id="message" class="message"></div>
+
+        <!-- Current Status -->
+        <div class="card">
+            <h2><span class="refresh-indicator"></span>Current Status</h2>
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="status-label">Temperature</div>
+                    <div class="status-value" id="temperature">--</div>
+                    <div class="status-unit">°C</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Humidity</div>
+                    <div class="status-value" id="humidity">--</div>
+                    <div class="status-unit">%</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">Weather</div>
+                    <div class="status-value" id="weather" style="font-size: 1.2em;">--</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">System Status</div>
+                    <div class="status-value" id="running" style="font-size: 1.2em;">--</div>
+                </div>
+            </div>
+            <p style="text-align: center; color: #6c757d; font-size: 0.9em;">
+                Last Updated: <span id="lastUpdate">--</span>
+            </p>
+        </div>
+
+        <!-- Display Settings -->
+        <div class="card">
+            <h2>Display Settings</h2>
+            
+            <div class="form-group">
+                <label for="displayMode">Display Mode</label>
+                <select id="displayMode">
+                    <option value="carousel">Carousel (Rotate through all pages)</option>
+                    <option value="icon">Icon Only</option>
+                    <option value="scrolling">Scrolling Text</option>
+                    <option value="mixed">Mixed (Icon + Text)</option>
+                    <option value="alert">Alert Mode</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="pageDuration">Page Duration (seconds)</label>
+                <div class="slider-container">
+                    <input type="range" id="pageDuration" class="slider" min="5" max="60" value="15">
+                    <span id="pageDurationValue">15s</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="brightness">Display Brightness</label>
+                <div class="slider-container">
+                    <input type="range" id="brightness" class="slider" min="0" max="255" value="255">
+                    <span id="brightnessValue">255</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Carousel Items (select what to display)</label>
+                <div class="carousel-items">
+                    <label class="carousel-item">
+                        <input type="checkbox" name="carousel" value="temperature_bars" checked>
+                        Temperature Bars
+                    </label>
+                    <label class="carousel-item">
+                        <input type="checkbox" name="carousel" value="weather_icon" checked>
+                        Weather Icon
+                    </label>
+                    <label class="carousel-item">
+                        <input type="checkbox" name="carousel" value="temperature_display" checked>
+                        Temperature Display
+                    </label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="saveDisplaySettings()">Save Display Settings</button>
+            </div>
+        </div>
+
+        <!-- Update Intervals -->
+        <div class="card">
+            <h2>Update Intervals</h2>
+            
+            <div class="form-group">
+                <label for="weatherInterval">Weather Update (minutes)</label>
+                <input type="number" id="weatherInterval" min="5" max="120" value="30">
+            </div>
+
+            <div class="form-group">
+                <label for="earthquakeInterval">Earthquake Check (minutes)</label>
+                <input type="number" id="earthquakeInterval" min="1" max="60" value="5">
+            </div>
+
+            <div class="form-group">
+                <label for="observationInterval">Observation Update (minutes)</label>
+                <input type="number" id="observationInterval" min="5" max="60" value="10">
+            </div>
+
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="saveIntervals()">Save Intervals</button>
+                <button class="btn btn-secondary" onclick="forceUpdate('weather')">Force Weather Update</button>
+                <button class="btn btn-secondary" onclick="forceUpdate('earthquake')">Force Earthquake Check</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh status every 5 seconds
+        let refreshInterval;
+
+        function showMessage(message, type = 'success') {
+            const msgDiv = document.getElementById('message');
+            msgDiv.textContent = message;
+            msgDiv.className = `message ${type}`;
+            msgDiv.style.display = 'block';
+            setTimeout(() => {
+                msgDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        async function loadStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                // Update status display
+                document.getElementById('temperature').textContent = 
+                    data.current_status.temperature?.toFixed(1) || '--';
+                document.getElementById('humidity').textContent = 
+                    data.current_status.humidity || '--';
+                document.getElementById('weather').textContent = 
+                    data.current_status.weather || '--';
+                document.getElementById('running').textContent = 
+                    data.current_status.running ? '✅ Running' : '❌ Stopped';
+                document.getElementById('lastUpdate').textContent = 
+                    new Date(data.timestamp).toLocaleString('zh-TW');
+                
+                // Update form values
+                document.getElementById('displayMode').value = data.display_settings.mode;
+                document.getElementById('pageDuration').value = data.display_settings.page_duration;
+                document.getElementById('pageDurationValue').textContent = data.display_settings.page_duration + 's';
+                document.getElementById('brightness').value = data.display_settings.brightness;
+                document.getElementById('brightnessValue').textContent = data.display_settings.brightness;
+                
+                document.getElementById('weatherInterval').value = data.update_intervals.weather / 60;
+                document.getElementById('earthquakeInterval').value = data.update_intervals.earthquake / 60;
+                document.getElementById('observationInterval').value = data.update_intervals.observation / 60;
+            } catch (error) {
+                console.error('Error loading status:', error);
+            }
+        }
+
+        async function saveDisplaySettings() {
+            const carouselItems = Array.from(document.querySelectorAll('input[name="carousel"]:checked'))
+                .map(cb => cb.value);
+            
+            const settings = {
+                display_settings: {
+                    mode: document.getElementById('displayMode').value,
+                    page_duration: parseFloat(document.getElementById('pageDuration').value),
+                    brightness: parseInt(document.getElementById('brightness').value),
+                    carousel_items: carouselItems
+                }
+            };
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+                const result = await response.json();
+                showMessage(result.message, result.success ? 'success' : 'error');
+            } catch (error) {
+                showMessage('Error saving settings: ' + error.message, 'error');
+            }
+        }
+
+        async function saveIntervals() {
+            const intervals = {
+                update_intervals: {
+                    weather: parseInt(document.getElementById('weatherInterval').value) * 60,
+                    earthquake: parseInt(document.getElementById('earthquakeInterval').value) * 60,
+                    observation: parseInt(document.getElementById('observationInterval').value) * 60
+                }
+            };
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(intervals)
+                });
+                const result = await response.json();
+                showMessage(result.message, result.success ? 'success' : 'error');
+            } catch (error) {
+                showMessage('Error saving intervals: ' + error.message, 'error');
+            }
+        }
+
+        async function forceUpdate(type) {
+            try {
+                const response = await fetch('/api/force_update', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type })
+                });
+                const result = await response.json();
+                showMessage(result.message, result.success ? 'success' : 'error');
+                if (result.success) {
+                    setTimeout(loadStatus, 2000);
+                }
+            } catch (error) {
+                showMessage('Error triggering update: ' + error.message, 'error');
+            }
+        }
+
+        // Update slider value displays
+        document.getElementById('pageDuration').addEventListener('input', function() {
+            document.getElementById('pageDurationValue').textContent = this.value + 's';
+        });
+
+        document.getElementById('brightness').addEventListener('input', function() {
+            document.getElementById('brightnessValue').textContent = this.value;
+        });
+
+        // Initialize
+        loadStatus();
+        refreshInterval = setInterval(loadStatus, 5000);
+    </script>
+</body>
+</html>
