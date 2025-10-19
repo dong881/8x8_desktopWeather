@@ -6,3 +6,9 @@ luma.led-matrix>=1.7.0
 
 # HTTP requests library for weather API
 requests>=2.25.0
+
+# Image processing library (required by luma)
+Pillow>=8.0.0
+
+# Security warning suppression
+urllib3>=1.26.0
