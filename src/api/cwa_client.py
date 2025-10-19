@@ -140,14 +140,35 @@ class CWAClient:
         Returns:
             Observation data or None
         """
+        print(f"Requesting observation data for station: {station_id}")
         params = {'stationId': station_id}
         
-        return self._make_request(
+        data = self._make_request(
             'O-A0001-001',
             params,
             cache_file='observation.json',
             cache_duration=600  # 10 minutes
         )
+        
+        if data:
+            print(f"Observation data received successfully")
+            # Log basic structure to help debug
+            if 'records' in data:
+                print(f"  - Has 'records' key")
+                if 'Station' in data['records']:
+                    stations = data['records']['Station']
+                    print(f"  - Found {len(stations)} station(s)")
+                    if stations:
+                        station = stations[0]
+                        print(f"  - Station keys: {list(station.keys())[:10]}")
+                else:
+                    print(f"  - No 'Station' key in records")
+            else:
+                print(f"  - No 'records' key in response")
+        else:
+            print(f"Failed to get observation data for station {station_id}")
+        
+        return data
     
     def get_earthquake_report(self) -> Optional[Dict]:
         """

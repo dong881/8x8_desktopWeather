@@ -199,7 +199,7 @@ class EnhancedWeatherDisplay:
             self.scheduler.start()
             
             # Start web configuration interface
-            logger.info("Starting web configuration interface on port 6666...")
+            logger.info("Starting web configuration interface on port 5000...")
             start_web_server(self.display_manager, self.scheduler, self)
             
             # Create display pages
@@ -209,9 +209,16 @@ class EnhancedWeatherDisplay:
             logger.info("Entering main display loop...")
             update_counter = 0
             last_page_rotation = time.time()
+            last_brightness_update = time.time()
             
             while True:
                 try:
+                    # Update brightness every 60 seconds
+                    current_time = time.time()
+                    if current_time - last_brightness_update >= 60:
+                        self.display_manager.update_brightness()
+                        last_brightness_update = current_time
+                    
                     # Check if we need to update current hour index
                     now = datetime.now()
                     new_hour_index = self.processor.calculate_time_index(now.hour)
@@ -233,7 +240,6 @@ class EnhancedWeatherDisplay:
                     time.sleep(1)
                     
                     # Rotate through display pages every 20 seconds
-                    current_time = time.time()
                     if current_time - last_page_rotation >= 20:
                         self.create_display_pages()
                         if len(self.display_manager.pages) > 1:

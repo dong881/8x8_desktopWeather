@@ -5,6 +5,7 @@ Manages different display modes and content presentation
 
 import time
 from typing import List, Dict, Any, Optional, Callable
+from datetime import datetime
 from luma.core.render import canvas
 from .icons import WeatherIcons
 from .animations import AnimationEngine
@@ -52,6 +53,37 @@ class DisplayManager:
         self.current_page_idx = 0
         self.alert_active = False
         self.alert_callback: Optional[Callable] = None
+        self.auto_brightness_enabled = True
+        self.manual_brightness = None  # Override auto brightness if set
+        
+        # Brightness schedule (hour: brightness_level)
+        # 0-255 scale, lower values for night, higher for day
+        self.brightness_schedule = {
+            0: 10,   # Midnight - very dim
+            1: 10,
+            2: 10,
+            3: 10,
+            4: 10,
+            5: 10,
+            6: 30,   # Dawn - gradually increase
+            7: 80,
+            8: 150,
+            9: 200,
+            10: 255, # Day - full brightness
+            11: 255,
+            12: 255,
+            13: 255,
+            14: 255,
+            15: 255,
+            16: 255,
+            17: 200,
+            18: 150, # Dusk - gradually decrease
+            19: 80,
+            20: 50,
+            21: 30,
+            22: 20,  # Night - dim
+            23: 10,
+        }
     
     def add_page(self, page: DisplayPage):
         """
@@ -66,6 +98,57 @@ class DisplayManager:
         """Clear all pages"""
         self.pages.clear()
         self.current_page_idx = 0
+    
+    def get_auto_brightness(self) -> int:
+        """
+        Get automatic brightness based on time of day
+        
+        Returns:
+            Brightness level (0-255)
+        """
+        current_hour = datetime.now().hour
+        return self.brightness_schedule.get(current_hour, 255)
+    
+    def set_manual_brightness(self, brightness: int):
+        """
+        Set manual brightness override
+        
+        Args:
+            brightness: Brightness level (0-255), None to disable manual override
+        """
+        if brightness is None:
+            self.manual_brightness = None
+            self.auto_brightness_enabled = True
+        else:
+            self.manual_brightness = max(0, min(255, brightness))
+            self.auto_brightness_enabled = False
+        self.apply_brightness()
+    
+    def enable_auto_brightness(self):
+        """Enable automatic brightness adjustment based on time"""
+        self.auto_brightness_enabled = True
+        self.manual_brightness = None
+        self.apply_brightness()
+    
+    def disable_auto_brightness(self):
+        """Disable automatic brightness adjustment"""
+        self.auto_brightness_enabled = False
+    
+    def apply_brightness(self):
+        """Apply current brightness setting to device"""
+        if self.manual_brightness is not None:
+            brightness = self.manual_brightness
+        elif self.auto_brightness_enabled:
+            brightness = self.get_auto_brightness()
+        else:
+            brightness = 255  # Default to full brightness
+        
+        self.device.contrast(brightness)
+    
+    def update_brightness(self):
+        """Update brightness based on current time (call periodically)"""
+        if self.auto_brightness_enabled:
+            self.apply_brightness()
     
     def show_icon(self, icon_name: str, duration: float = 3.0, animate: bool = False):
         """
