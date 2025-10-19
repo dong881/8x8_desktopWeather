@@ -111,8 +111,10 @@ def force_update():
             state.scheduler.force_earthquake_check()
         
         return jsonify({'success': True, 'message': f'{update_type} update triggered'})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    except Exception:
+        # Log the error but don't expose details to client
+        app.logger.error(f'Error during {update_type} update', exc_info=True)
+        return jsonify({'success': False, 'message': 'Update failed. Please try again.'})
 
 
 @app.route('/api/display_mode', methods=['POST'])
