@@ -1,7 +1,40 @@
 Smart Weather Display
 =====================
 
-This Python script retrieves weather forecast data from the Central Weather Bureau (CWB) API and displays it on an 8x8 LED matrix using a MAX7219 driver.
+This Python script retrieves weather forecast data from the Central Weather Administration (CWA) API and displays it on an 8x8 LED matrix using a MAX7219 driver.
+
+## 🎉 Enhanced Version Available!
+
+This project now includes a **modular architecture** with advanced features:
+
+### ✨ New Features
+- **Multiple API Integration**: Weather forecast, real-time observation, earthquake alerts, UV index
+- **8x8 Icon Library**: Visual weather icons (sunny, rainy, cloudy, etc.)
+- **Animation System**: Rain drops, sun shine, earthquake shake effects
+- **Smart Display Modes**: Carousel rotation, scrolling text, icon display, mixed mode
+- **Intelligent Alerts**: Priority-based alert system with earthquake detection
+- **Data Caching**: Local caching with automatic fallback on API failure
+- **Background Scheduler**: Automatic data updates with configurable intervals
+
+### 📚 Documentation
+- **[FEATURES.md](FEATURES.md)**: Complete feature overview and usage guide
+- **[API_GUIDE.md](API_GUIDE.md)**: Comprehensive API integration documentation
+- **[config.example.py](config.example.py)**: Configuration template
+
+### 🚀 Quick Start
+```bash
+# Run enhanced version with new features
+python3 main.py
+
+# Or run original version (backward compatible)
+python3 Weather.py
+```
+
+See [FEATURES.md](FEATURES.md) for detailed documentation on the new modular architecture.
+
+---
+
+## Original Features
 
 ![image](https://github.com/dong881/8x8_desktopWeather/assets/52557611/b090fc50-3632-4c0f-9d17-944792c73374)
 
@@ -19,6 +52,43 @@ Prerequisites
 -   Python 3.x
 -   Raspberry Pi (or any other compatible hardware) with SPI interface
 -   Internet connection
+
+## Architecture
+
+### Modular Structure
+```
+src/
+├── api/              # API clients and data processing
+│   ├── cwa_client.py      # CWA API integration
+│   └── data_processor.py  # Data transformation
+├── display/          # Display control and visualization
+│   ├── icons.py           # 8x8 pixel icon library
+│   ├── animations.py      # Animation engine
+│   └── display_manager.py # Display mode manager
+└── utils/            # Utility modules
+    ├── logger.py          # Logging system
+    └── scheduler.py       # Background task scheduler
+```
+
+### Key Components
+
+**API Integration** (`src/api/`)
+- Multi-endpoint CWA API client with caching
+- Earthquake monitoring and alerts
+- Real-time weather observation
+- UV index and weather alerts
+
+**Display System** (`src/display/`)
+- 8x8 pixel icon library (20+ icons)
+- Animation engine (rain, sun, earthquake effects)
+- Multiple display modes (carousel, icon, mixed, alert)
+- Smooth transitions and effects
+
+**Background Services** (`src/utils/`)
+- Automatic data updates (5-30 min intervals)
+- Earthquake detection (5 min checks)
+- Priority-based alert system
+- Error handling and logging
 
 ## Installation
 
@@ -117,6 +187,33 @@ Configuration is now complete, and SPI is ready for use.
 
 Usage
 -----
+
+### Enhanced Version (Recommended)
+
+The enhanced version provides multiple data sources, visual icons, and smart alerts:
+
+1.  Connect the 8x8 LED matrix to your Raspberry Pi or compatible hardware.
+    
+2.  Run the enhanced version:
+    ```bash
+    # Test mode
+    python3 main.py
+    
+    # Long-term background mode
+    nohup python3 main.py &
+    ```
+
+3.  The system will:
+    - Display startup animation
+    - Fetch weather data from CWA API
+    - Show temperature bars with rainfall indicators (blinks current time)
+    - Rotate through weather icons and temperature displays
+    - Monitor for earthquakes and display alerts automatically
+    - Update data in background (weather: 30min, earthquake: 5min)
+
+### Original Version
+
+For the classic temperature bar display only:
 
 1.  Connect the 8x8 LED matrix to your Raspberry Pi or compatible hardware.
     

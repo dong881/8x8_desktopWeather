@@ -105,7 +105,7 @@ After=network.target
 Type=simple
 User=$USER
 WorkingDirectory=$PROJECT_DIR_ABS
-ExecStart=$VENV_DIR_ABS/bin/python3 $PROJECT_DIR_ABS/Weather.py
+ExecStart=$VENV_DIR_ABS/bin/python3 $PROJECT_DIR_ABS/main.py
 Restart=always
 RestartSec=10
 
