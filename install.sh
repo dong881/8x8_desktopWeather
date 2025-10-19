@@ -79,13 +79,41 @@ pip install -r requirements.txt
 
 # Step 7: Configure Weather API
 echo "Configuring Weather API..."
-read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
-cat > config.py << EOF
-# config.py
-WeatherAPI = {
-    'Authorization': '$TOKEN'
-}
-EOF
+CONFIG_FILE="config.py"
+existing_token=""
+if [ -f "$CONFIG_FILE" ]; then
+    existing_token=$(python3 - <<'PY'
+import re
+from pathlib import Path
+path = Path("config.py")
+text = path.read_text(encoding="utf-8")
+match = re.search(r"['\"]Authorization['\"]\s*:\s*['\"]([^'\"]*)['\"]", text)
+print((match.group(1).strip() if match else ""))
+PY
+)
+fi
+
+if [ -n "$existing_token" ]; then
+    echo "Existing CWA token detected; skipping token prompt."
+else
+    read -r -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
+    CWA_TOKEN="$TOKEN" python3 - <<'PY'
+import os, re
+from pathlib import Path
+token = os.environ.get("CWA_TOKEN", "").strip()
+path = Path("config.py")
+template = f"# config.py\nWeatherAPI = {{\n    'Authorization': '{token}'\n}}\n"
+if not path.exists():
+    path.write_text(template, encoding="utf-8")
+else:
+    text = path.read_text(encoding="utf-8")
+    new_text, count = re.subn(r"(['\"]Authorization['\"]\s*:\s*)['\"][^'\"]*['\"]", rf"\1'{token}'", text)
+    if not count:
+        new_text = template + "\n" + text
+    path.write_text(new_text, encoding="utf-8")
+PY
+fi
+fi
 
 # Step 8: Set timezone (assume Asia/Taipei; can be adjusted)
 echo "Setting timezone to Asia/Taipei..."

@@ -212,10 +212,25 @@ class CWAClient:
             
             # Get most recent earthquake
             latest = earthquakes[0]
-            eq_time_str = latest['EarthquakeNo']  # Format: YYYYMMDDHHMMSS
-            eq_time = datetime.strptime(eq_time_str, '%Y%m%d%H%M%S')
-            
-            # Check if within threshold
+            origin_time = latest.get('EarthquakeInfo', {}).get('OriginTime')
+            eq_time = None
+            if origin_time:
+                cleaned = origin_time.replace('/', '-')
+                for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S'):
+                    try:
+                        eq_time = datetime.strptime(cleaned, fmt)
+                        break
+                    except ValueError:
+                        continue
+            if eq_time is None:
+                eq_no = latest.get('EarthquakeNo')
+                if eq_no is not None:
+                    try:
+                        eq_time = datetime.strptime(str(eq_no), '%Y%m%d%H%M%S')
+                    except ValueError:
+                        pass
+            if eq_time is None:
+                return None
             time_diff = (datetime.now() - eq_time).total_seconds()
             if time_diff <= time_threshold:
                 return latest
