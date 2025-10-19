@@ -212,25 +212,35 @@ class CWAClient:
             
             # Get most recent earthquake
             latest = earthquakes[0]
-            origin_time = latest.get('EarthquakeInfo', {}).get('OriginTime')
+            
+            # Try to get time from OriginTime first, then fall back to EarthquakeNo
             eq_time = None
+            origin_time = latest.get('EarthquakeInfo', {}).get('OriginTime')
+            
             if origin_time:
-                cleaned = origin_time.replace('/', '-')
+                # Parse OriginTime (format: "2025/10/20 00:32:45" or "2025-10-20T00:32:45")
+                cleaned = str(origin_time).replace('/', '-')
                 for fmt in ('%Y-%m-%d %H:%M:%S', '%Y-%m-%dT%H:%M:%S'):
                     try:
                         eq_time = datetime.strptime(cleaned, fmt)
                         break
                     except ValueError:
                         continue
+            
             if eq_time is None:
+                # Fall back to EarthquakeNo (format: YYYYMMDDHHMMSS)
                 eq_no = latest.get('EarthquakeNo')
                 if eq_no is not None:
                     try:
                         eq_time = datetime.strptime(str(eq_no), '%Y%m%d%H%M%S')
                     except ValueError:
                         pass
+            
             if eq_time is None:
+                print("Warning: Could not parse earthquake time")
                 return None
+            
+            # Check if within threshold
             time_diff = (datetime.now() - eq_time).total_seconds()
             if time_diff <= time_threshold:
                 return latest

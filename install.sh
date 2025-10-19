@@ -113,7 +113,6 @@ else:
     path.write_text(new_text, encoding="utf-8")
 PY
 fi
-fi
 
 # Step 8: Set timezone (assume Asia/Taipei; can be adjusted)
 echo "Setting timezone to Asia/Taipei..."

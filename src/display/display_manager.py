@@ -232,19 +232,59 @@ class DisplayManager:
             content_callback(self.device)
     
     def show_startup_logo(self):
-        """Display startup logo animation"""
+        """Show startup logo animation with smiley face"""
+        # Smiley face icon (8x8)
+        SMILEY = [
+            0b00111100,
+            0b01000010,
+            0b10100101,
+            0b10000001,
+            0b10100101,
+            0b10011001,
+            0b01000010,
+            0b00111100,
+        ]
+        
+        # Draw smiley face
         with canvas(self.device) as draw:
-            draw.rectangle(self.device.bounding_box, outline="white", fill="black")
-            draw.ellipse([(0, 0), (7, 7)], outline="white", fill="black")
-            draw.ellipse([(2, 2), (5, 5)], outline="white", fill="black")
+            for row in range(8):
+                for col in range(8):
+                    if SMILEY[row] & (1 << (7 - col)):
+                        draw.point((col, row), fill="white")
         
         time.sleep(0.5)
         
-        # Fade out and in
-        for intensity in list(range(15, 0, -1)):
+        # Fade out
+        for intensity in range(15, -1, -1):
             self.device.contrast(intensity * 16)
             time.sleep(0.05)
         
+        # Fade in
         for intensity in range(16):
             self.device.contrast(intensity * 16)
             time.sleep(0.05)
+        
+        # Blink effect (eyes)
+        for _ in range(2):
+            # Close eyes (remove dots at row 2)
+            with canvas(self.device) as draw:
+                for row in range(8):
+                    for col in range(8):
+                        if row == 2:
+                            # Draw closed eyes (horizontal line)
+                            if col in [2, 5]:
+                                draw.point((col, row), fill="white")
+                        elif SMILEY[row] & (1 << (7 - col)):
+                            draw.point((col, row), fill="white")
+            time.sleep(0.15)
+            
+            # Open eyes (back to normal)
+            with canvas(self.device) as draw:
+                for row in range(8):
+                    for col in range(8):
+                        if SMILEY[row] & (1 << (7 - col)):
+                            draw.point((col, row), fill="white")
+            time.sleep(0.3)
+        
+        time.sleep(0.3)
+        self.device.clear()
