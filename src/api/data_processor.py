@@ -105,6 +105,7 @@ class DataProcessor:
     def process_observation_data(data: Dict) -> Optional[Dict]:
         """
         Process real-time observation data
+        Supports both old and new CWA API formats
         
         Args:
             data: API response data
@@ -124,10 +125,19 @@ class DataProcessor:
             location = data['records']['Station'][0]
             obs_time = location.get('ObsTime', {}).get('DateTime', 'N/A')
             
-            # Extract values with defaults
-            temp = location.get('Temperature', '0')
-            humidity = location.get('RelativeHumidity', '0')
-            weather = location.get('Weather', 'N/A')
+            # Check if data uses new API format (with WeatherElement)
+            weather_element = location.get('WeatherElement', {})
+            
+            if weather_element:
+                # New API format: data is nested in WeatherElement
+                temp = weather_element.get('AirTemperature', '0')
+                humidity = weather_element.get('RelativeHumidity', '0')
+                weather = weather_element.get('Weather', 'N/A')
+            else:
+                # Old API format: data is directly on Station object
+                temp = location.get('Temperature', '0')
+                humidity = location.get('RelativeHumidity', '0')
+                weather = location.get('Weather', 'N/A')
             
             # Handle string values that might be '-' or invalid
             try:
