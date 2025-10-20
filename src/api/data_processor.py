@@ -14,6 +14,7 @@ class DataProcessor:
     def process_weather_forecast(data: Dict) -> Optional[Tuple[List[int], List[int]]]:
         """
         Process weather forecast data into temperature and rainfall arrays
+        Supports both old and new CWA API formats (case-sensitive field names)
         
         Args:
             data: API response data
@@ -22,26 +23,57 @@ class DataProcessor:
             Tuple of (temperature_levels, rainfall_levels) or None
         """
         try:
-            location_data = data["records"]["Locations"][0]["Location"][0]["WeatherElement"]
+            location_data = data["records"]["Locations"][0]["Location"][0]
+            
+            # Support both old (WeatherElement) and new (weatherElement) formats
+            weather_element = location_data.get("weatherElement") or location_data.get("WeatherElement")
+            
+            if not weather_element:
+                print("Error: No weatherElement or WeatherElement found in location data")
+                return None
             
             # Find temperature and precipitation data
             temp_data = None
             pop_data = None
             
-            for element in location_data:
-                if element.get("ElementName") == "T":
-                    temp_data = element["Time"]
-                elif element.get("ElementName") == "PoP6h":
-                    pop_data = element["Time"]
+            for element in weather_element:
+                # Support both old (ElementName) and new (elementName) formats
+                element_name = element.get("elementName") or element.get("ElementName")
+                
+                if element_name == "T":
+                    # Support both old (Time) and new (time) formats
+                    temp_data = element.get("Time") or element.get("time")
+                elif element_name == "PoP6h":
+                    pop_data = element.get("Time") or element.get("time")
             
             if not temp_data or not pop_data:
+                print(f"Error: Missing temperature or precipitation data (temp: {temp_data is not None}, pop: {pop_data is not None})")
                 return None
             
             # Extract temperature values
-            temp_values = [int(t['ElementValue'][0]['Temperature']) for t in temp_data]
+            # Support both old (ElementValue) and new (elementValue) formats
+            temp_values = []
+            for t in temp_data:
+                element_value = t.get('ElementValue') or t.get('elementValue')
+                if element_value and len(element_value) > 0:
+                    # Support both Temperature and temperature field names
+                    temp = element_value[0].get('Temperature') or element_value[0].get('temperature')
+                    if temp:
+                        temp_values.append(int(temp))
             
             # Extract precipitation probabilities
-            pop_values = [int(p['ElementValue'][0]['Probability']) for p in pop_data]
+            pop_values = []
+            for p in pop_data:
+                element_value = p.get('ElementValue') or p.get('elementValue')
+                if element_value and len(element_value) > 0:
+                    # Support both Probability and probability field names
+                    prob = element_value[0].get('Probability') or element_value[0].get('probability')
+                    if prob:
+                        pop_values.append(int(prob))
+            
+            if not temp_values or not pop_values:
+                print(f"Error: Failed to extract temperature or precipitation values")
+                return None
             
             # Convert to LED levels
             temp_levels = DataProcessor._temperature_to_levels(temp_values)
@@ -51,6 +83,8 @@ class DataProcessor:
         
         except Exception as e:
             print(f"Error processing weather forecast: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     @staticmethod
