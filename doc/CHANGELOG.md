@@ -2,6 +2,30 @@
 
 All notable changes to the 8x8 Desktop Weather Display project.
 
+## [2.1.0] - 2025-10-20
+
+### Added
+- **Automatic Night Mode**: LED brightness now automatically adjusts based on time of day
+  - Night hours (0-5, 22-23): Very dim (10-30)
+  - Dawn/Dusk (6-9, 18-21): Medium brightness (50-150)
+  - Day hours (10-17): Full brightness (200-255)
+- **Brightness Control API**: Enhanced web interface to control brightness
+  - Manual brightness override
+  - Toggle between auto and manual mode
+  - Real-time brightness adjustment
+
+### Changed
+- **Port Change**: Web interface now runs on port 5000 instead of 6666 (fixes ERR_UNSAFE_PORT browser error)
+- **Improved Error Handling**: Better logging and error messages for API data issues
+  - Added detailed logging in observation data processing
+  - Enhanced error messages when API returns 0 or N/A values
+  - Better handling of missing or invalid data fields
+
+### Fixed
+- Fixed browser security issue with port 6666 (unsafe port blocked by Chrome/Firefox)
+- Improved observation data extraction with better null/missing value handling
+- Added warning logs when API data contains zero or N/A values
+
 ## [2.0.0] - 2024-10-19
 
 ### 🎉 Major Release - Modular Architecture

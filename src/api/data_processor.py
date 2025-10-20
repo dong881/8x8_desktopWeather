@@ -114,22 +114,49 @@ class DataProcessor:
         """
         try:
             if not data or 'records' not in data:
+                print("Error: No records in observation data")
+                return None
+            
+            if 'Station' not in data['records'] or not data['records']['Station']:
+                print("Error: No Station data in observation records")
                 return None
             
             location = data['records']['Station'][0]
-            obs_time = location['ObsTime']['DateTime']
+            obs_time = location.get('ObsTime', {}).get('DateTime', 'N/A')
+            
+            # Extract values with defaults
+            temp = location.get('Temperature', '0')
+            humidity = location.get('RelativeHumidity', '0')
+            weather = location.get('Weather', 'N/A')
+            
+            # Handle string values that might be '-' or invalid
+            try:
+                temp_value = float(temp) if temp and temp != '-' else 0.0
+            except (ValueError, TypeError):
+                temp_value = 0.0
+                
+            try:
+                humidity_value = int(float(humidity)) if humidity and humidity != '-' else 0
+            except (ValueError, TypeError):
+                humidity_value = 0
             
             result = {
                 'time': obs_time,
-                'temperature': float(location.get('Temperature', 0)),
-                'humidity': int(location.get('RelativeHumidity', 0)),
-                'weather': location.get('Weather', 'N/A')
+                'temperature': temp_value,
+                'humidity': humidity_value,
+                'weather': weather if weather and weather != '-' else 'N/A'
             }
+            
+            # Log if we got zero/invalid values
+            if temp_value == 0.0 or humidity_value == 0 or weather == 'N/A':
+                print(f"Warning: Observation data has missing values - Temp: {temp}, Humidity: {humidity}, Weather: {weather}")
             
             return result
         
         except Exception as e:
             print(f"Error processing observation data: {str(e)}")
+            import traceback
+            traceback.print_exc()
             return None
     
     @staticmethod

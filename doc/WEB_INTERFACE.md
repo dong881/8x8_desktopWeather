@@ -4,7 +4,7 @@ The 8x8 Weather Display includes a modern web-based configuration interface that
 
 ## Overview
 
-The web interface runs on port 6666 and provides real-time monitoring and configuration capabilities through a clean, minimalist UI that works on both desktop and mobile devices.
+The web interface runs on port 5000 and provides real-time monitoring and configuration capabilities through a clean, minimalist UI that works on both desktop and mobile devices.
 
 ## Features
 
@@ -22,7 +22,7 @@ The web interface runs on port 6666 and provides real-time monitoring and config
   - Alert: Priority-based alert system
   
 - **Page Duration**: Adjust how long each page is displayed (5-60 seconds)
-- **Brightness Control**: Set display brightness from 0-255
+- **Brightness Control**: Set display brightness from 0-255, or enable automatic brightness adjustment based on time of day
 - **Carousel Items**: Select which content to include in the carousel rotation:
   - Temperature bars
   - Weather icon
@@ -43,12 +43,12 @@ Configure how frequently data is fetched:
 ### Local Access
 If you're on the same network as your Raspberry Pi:
 ```
-http://[raspberry-pi-ip]:6666
+http://[raspberry-pi-ip]:5000
 ```
 
 For example:
 ```
-http://192.168.1.100:6666
+http://192.168.1.100:5000
 ```
 
 ### Finding Your Raspberry Pi IP Address
@@ -77,6 +77,7 @@ Get current system status including weather data, display settings, and update i
     "mode": "carousel",
     "page_duration": 15.0,
     "brightness": 255,
+    "auto_brightness": true,
     "carousel_items": ["temperature_bars", "weather_icon", "temperature_display"]
   },
   "update_intervals": {
@@ -98,6 +99,7 @@ Update display settings or update intervals.
     "mode": "carousel",
     "page_duration": 20.0,
     "brightness": 200,
+    "auto_brightness": false,
     "carousel_items": ["temperature_bars", "weather_icon"]
   },
   "update_intervals": {
@@ -180,13 +182,13 @@ The web interface is designed for use on a local network. For remote access:
 1. **VPN**: Use a VPN connection to securely access your home network
 2. **SSH Tunnel**: Create an SSH tunnel to access the web interface:
    ```bash
-   ssh -L 6666:localhost:6666 pi@your-pi-ip
+   ssh -L 5000:localhost:5000 pi@your-pi-ip
    ```
-   Then access at `http://localhost:6666`
+   Then access at `http://localhost:5000`
 
 3. **Reverse Proxy**: Set up a reverse proxy (nginx, Apache) with authentication
 
-**Do not expose port 6666 directly to the internet without proper security measures.**
+**Do not expose port 5000 directly to the internet without proper security measures.**
 
 ## Troubleshooting
 
@@ -194,13 +196,13 @@ The web interface is designed for use on a local network. For remote access:
 
 1. Check if the server is running:
    ```bash
-   netstat -tuln | grep 6666
+   netstat -tuln | grep 5000
    ```
 
 2. Check firewall settings:
    ```bash
    sudo ufw status
-   sudo ufw allow 6666
+   sudo ufw allow 5000
    ```
 
 3. Verify the IP address:

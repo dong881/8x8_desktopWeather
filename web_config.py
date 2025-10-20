@@ -27,7 +27,8 @@ class WebConfigState:
             'mode': 'carousel',
             'page_duration': 15.0,
             'carousel_items': ['temperature_bars', 'weather_icon', 'temperature_display'],
-            'brightness': 255
+            'brightness': 255,
+            'auto_brightness': True
         }
         self.current_status = {
             'temperature': 0.0,
@@ -77,8 +78,19 @@ def update_settings():
         state.display_settings.update(data['display_settings'])
         
         # Apply brightness change immediately
-        if state.display_manager and 'brightness' in data['display_settings']:
-            state.display_manager.device.contrast(data['display_settings']['brightness'])
+        if state.display_manager:
+            if 'auto_brightness' in data['display_settings']:
+                auto_brightness = data['display_settings']['auto_brightness']
+                if auto_brightness:
+                    state.display_manager.enable_auto_brightness()
+                else:
+                    state.display_manager.disable_auto_brightness()
+                    # Apply manual brightness if provided
+                    if 'brightness' in data['display_settings']:
+                        state.display_manager.set_manual_brightness(data['display_settings']['brightness'])
+            elif 'brightness' in data['display_settings']:
+                # Manual brightness without auto_brightness flag
+                state.display_manager.set_manual_brightness(data['display_settings']['brightness'])
     
     if 'update_intervals' in data:
         state.update_intervals.update(data['update_intervals'])
@@ -133,12 +145,12 @@ def change_display_mode():
     return jsonify({'success': True, 'message': f'Display mode changed to {mode}'})
 
 
-def run_web_server(host='0.0.0.0', port=6666):
+def run_web_server(host='0.0.0.0', port=5000):
     """Run the web server in a separate thread"""
     app.run(host=host, port=port, debug=False, use_reloader=False)
 
 
-def start_web_server(display_manager=None, scheduler=None, enhanced_display=None, host='0.0.0.0', port=6666):
+def start_web_server(display_manager=None, scheduler=None, enhanced_display=None, host='0.0.0.0', port=5000):
     """Start the web server in a background thread"""
     state.display_manager = display_manager
     state.scheduler = scheduler
