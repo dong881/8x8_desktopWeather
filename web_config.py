@@ -58,11 +58,12 @@ def get_status():
     }
     
     # Add real-time data from display manager if available
-    if state.enhanced_display:
+    if state.enhanced_display and state.enhanced_display.observation_data:
+        obs_data = state.enhanced_display.observation_data
         status['current_status'].update({
-            'temperature': getattr(state.enhanced_display.observation_data, 'temperature', 0) if state.enhanced_display.observation_data else 0,
-            'humidity': getattr(state.enhanced_display.observation_data, 'humidity', 0) if state.enhanced_display.observation_data else 0,
-            'weather': getattr(state.enhanced_display.observation_data, 'weather', 'N/A') if state.enhanced_display.observation_data else 'N/A',
+            'temperature': obs_data.get('temperature', 0),
+            'humidity': obs_data.get('humidity', 0),
+            'weather': obs_data.get('weather', 'N/A'),
             'running': True
         })
     
