@@ -51,6 +51,7 @@ class EnhancedWeatherDisplay:
         # Initialize display manager
         logger.info("Initializing display manager...")
         self.display_manager = DisplayManager(self.device)
+        self.display_manager.set_display_mode('carousel')  # Default mode
         
         # Initialize scheduler
         logger.info("Initializing scheduler...")
@@ -139,7 +140,7 @@ class EnhancedWeatherDisplay:
                             draw.point((i, 7), fill="white")
         
         self.display_manager.add_page(
-            DisplayPage("temperature_bars", show_temp_bars, duration=10.0, priority=3)
+            DisplayPage("temperature_bars", show_temp_bars, duration=20.0, priority=3)
         )
         
         # Page 2: Weather icon display
@@ -153,7 +154,7 @@ class EnhancedWeatherDisplay:
                     WeatherIcons.draw_icon(draw, 0, 0, icon)
             
             self.display_manager.add_page(
-                DisplayPage("weather_icon", show_weather_icon, duration=8.0, priority=3)
+                DisplayPage("weather_icon", show_weather_icon, duration=16.0, priority=3)
             )
         
         # Page 3: Temperature display
@@ -177,7 +178,7 @@ class EnhancedWeatherDisplay:
                         WeatherIcons.draw_digit(draw, 6, 0, temp_str[1])
             
             self.display_manager.add_page(
-                DisplayPage("temperature_display", show_temperature, duration=8.0, priority=3)
+                DisplayPage("temperature_display", show_temperature, duration=16.0, priority=3)
             )
     
     def run(self):
@@ -210,11 +211,13 @@ class EnhancedWeatherDisplay:
             update_counter = 0
             last_page_rotation = time.time()
             last_brightness_update = time.time()
+            last_mode_check = time.time()
             
             while True:
                 try:
-                    # Update brightness every 60 seconds
                     current_time = time.time()
+                    
+                    # Update brightness every 60 seconds
                     if current_time - last_brightness_update >= 60:
                         self.display_manager.update_brightness()
                         last_brightness_update = current_time
@@ -227,20 +230,29 @@ class EnhancedWeatherDisplay:
                         self.current_hour_index = new_hour_index
                         logger.info(f"Hour changed to {now.hour}:00, display index updated to: {new_hour_index}")
                     
-                    # Display temperature bars with blinking current column
-                    if self.temperature_levels and self.rainfall_levels:
-                        self.display_manager.show_temperature_bar(
-                            self.temperature_levels,
-                            self.rainfall_levels,
-                            self.current_hour_index,
-                            blink=(update_counter % 2 == 0)
-                        )
+                    # Check for alerts first
+                    if self.display_manager.alert_active:
+                        # Alert mode - let alert handle display
+                        time.sleep(1)
+                        continue
+                    
+                    # Display content based on current mode
+                    self.display_manager.show_mode_content(
+                        weather_data=self.observation_data,
+                        temperature_data=self.temperature_levels,
+                        rainfall_data=self.rainfall_levels,
+                        current_col=self.current_hour_index
+                    )
                     
                     update_counter += 1
                     time.sleep(1)
                     
-                    # Rotate through display pages every 20 seconds
-                    if current_time - last_page_rotation >= 20:
+                    # Rotate through display pages (less frequent at night)
+                    current_hour = now.hour
+                    rotation_interval = 40 if 22 <= current_hour or current_hour <= 6 else 20  # Slower at night
+                    
+                    if (current_time - last_page_rotation >= rotation_interval and 
+                        self.display_manager.current_mode == 'carousel'):
                         self.create_display_pages()
                         if len(self.display_manager.pages) > 1:
                             # Show 2 alternate pages with proper timing
