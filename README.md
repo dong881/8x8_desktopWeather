@@ -267,7 +267,9 @@ Customization
 Troubleshooting
 ---------------
 
--   If you encounter any issues, ensure that you have a stable internet connection and that your CWB authorization token is correct.
+-   **Getting zero values for temperature/humidity?** The CWA OpenData API structure was updated in 2025. This project now supports both old and new API formats automatically. See [doc/API_UPDATES.md](doc/API_UPDATES.md) for details.
+
+-   If you encounter any issues, ensure that you have a stable internet connection and that your CWA authorization token is correct.
     
 -   Make sure that the SPI interface is enabled on your Raspberry Pi. You can check and enable it using the `raspi-config` utility.
     
