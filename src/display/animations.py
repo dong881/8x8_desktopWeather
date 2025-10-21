@@ -228,5 +228,24 @@ class AnimationEngine:
                 if time.time() >= end_time:
                     break
                 with canvas(self.device) as draw:
-                    WeatherIcons.draw_icon(draw, 0, 0, frame)
+                    WeatherIcons.draw_icon_fullscreen(draw, frame)
+                time.sleep(frame_delay)
+    
+    def cute_wind_animation(self, duration: float = 4.0):
+        """
+        Animate cute wind effect with moving lines
+        
+        Args:
+            duration: Animation duration in seconds
+        """
+        frames = AnimationFrames.CUTE_WIND
+        frame_delay = 0.8  # Slower animation
+        end_time = time.time() + duration
+        
+        while time.time() < end_time:
+            for frame in frames:
+                if time.time() >= end_time:
+                    break
+                with canvas(self.device) as draw:
+                    WeatherIcons.draw_icon_fullscreen(draw, frame)
                 time.sleep(frame_delay)

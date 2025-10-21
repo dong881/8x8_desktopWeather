@@ -131,9 +131,12 @@ class EnhancedWeatherDisplay:
         # Page 1: Traditional temperature bar display
         def show_temp_bars(device):
             with canvas(device) as draw:
+                # Clear the display first
+                draw.rectangle(device.bounding_box, outline="black", fill="black")
+                
                 for i in range(8):
                     if i < len(self.temperature_levels):
-                        height = self.temperature_levels[i]
+                        height = max(0, min(7, self.temperature_levels[i]))  # Clamp to 0-7 range
                         for j in range(height):
                             draw.point((i, 7 - j - 1), fill="white")
                         if i < len(self.rainfall_levels) and self.rainfall_levels[i] == 1:
@@ -151,7 +154,7 @@ class EnhancedWeatherDisplay:
             def show_weather_icon(device):
                 icon = WeatherIcons.get_icon(icon_name)
                 with canvas(device) as draw:
-                    WeatherIcons.draw_icon(draw, 0, 0, icon)
+                    WeatherIcons.draw_icon_fullscreen(draw, icon)
             
             self.display_manager.add_page(
                 DisplayPage("weather_icon", show_weather_icon, duration=16.0, priority=3)
@@ -163,6 +166,9 @@ class EnhancedWeatherDisplay:
             
             def show_temperature(device):
                 with canvas(device) as draw:
+                    # Clear the display first
+                    draw.rectangle(device.bounding_box, outline="black", fill="black")
+                    
                     # Draw thermometer icon on left
                     icon = WeatherIcons.THERMOMETER_HOT if temp > 28 else WeatherIcons.THERMOMETER_COLD
                     for row in range(8):

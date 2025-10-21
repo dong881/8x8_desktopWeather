@@ -155,7 +155,7 @@ class DisplayManager:
     
     def show_icon(self, icon_name: str, duration: float = 3.0, animate: bool = False):
         """
-        Display a weather icon
+        Display a weather icon with fullscreen centering
         
         Args:
             icon_name: Name of icon to display
@@ -171,12 +171,17 @@ class DisplayManager:
                 self.animator.cute_sun_animation(duration)
             elif icon_name.upper() == 'CLOUDY':
                 self.animator.cute_cloud_animation(duration)
+            elif icon_name.upper() == 'WINDY':
+                self.animator.cute_wind_animation(duration)
             else:
                 # Default cute animation for other icons
                 self.animator.blink(icon, duration, blink_rate=0.8)
         else:
             with canvas(self.device) as draw:
-                WeatherIcons.draw_icon(draw, 0, 0, icon)
+                # Clear the display first
+                draw.rectangle(self.device.bounding_box, outline="black", fill="black")
+                # Draw icon centered and fullscreen
+                WeatherIcons.draw_icon_fullscreen(draw, icon)
             time.sleep(duration)
     
     def show_text_scroll(self, text: str, speed: float = 0.05):
@@ -360,13 +365,22 @@ class DisplayManager:
             blink: Whether to blink current column
         """
         with canvas(self.device) as draw:
+            # Clear the display first
+            draw.rectangle(self.device.bounding_box, outline="black", fill="black")
+            
             for i in range(8):
                 if blink and i == current_col:
+                    # Skip current column for blinking effect
                     continue
-                height = temperatures[i]
-                for j in range(height):
-                    draw.point((i, 7 - j - 1), fill="white")
-                if rainfall[i] == 1:
+                
+                # Ensure we have valid temperature data
+                if i < len(temperatures):
+                    height = max(0, min(7, temperatures[i]))  # Clamp to 0-7 range
+                    for j in range(height):
+                        draw.point((i, 7 - j - 1), fill="white")
+                
+                # Draw rainfall indicator
+                if i < len(rainfall) and rainfall[i] == 1:
                     draw.point((i, 7), fill="white")
     
     def trigger_alert(self, alert_type: str, data: Dict[str, Any], duration: float = 60.0):
@@ -539,6 +553,12 @@ class DisplayManager:
             rainfall_data: Rainfall levels for bar display
             current_col: Current time column for blinking
         """
+        # Ensure we have some data to display
+        if not weather_data and not temperature_data:
+            # Show default sunny icon if no data
+            self.show_icon('sunny', duration=5.0, animate=True)
+            return
+        
         if self.current_mode == self.MODE_ICON:
             if weather_data and weather_data.get('weather') != 'N/A':
                 weather_desc = weather_data.get('weather', '')
@@ -583,8 +603,8 @@ class DisplayManager:
             if temperature_data and rainfall_data:
                 self.show_temperature_bar(temperature_data, rainfall_data, current_col, blink=True)
             else:
-                # Fallback to icon display
-                self.show_icon('sunny', duration=5.0)
+                # Fallback to icon display with animation
+                self.show_icon('sunny', duration=5.0, animate=True)
     
     def _get_weather_icon_name(self, weather_desc: str) -> str:
         """Get appropriate icon name from weather description"""

@@ -141,6 +141,68 @@
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-primary.loading {
+            position: relative;
+            color: transparent;
+        }
+
+        .btn-primary.loading::after {
+            content: "";
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            top: 50%;
+            left: 50%;
+            margin-left: -8px;
+            margin-top: -8px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .slide-in {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .status-value.updated {
+            animation: highlight 0.5s ease-out;
+        }
+
+        @keyframes highlight {
+            0% { background-color: #10b981; color: white; }
+            100% { background-color: transparent; color: inherit; }
+        }
+
         .btn-secondary {
             background: #6c757d;
             color: white;
@@ -394,20 +456,54 @@
                 const response = await fetch('/api/status');
                 const data = await response.json();
                 
-                // Update status display
-                document.getElementById('temperature').textContent = 
-                    data.current_status.temperature?.toFixed(1) || '--';
-                document.getElementById('humidity').textContent = 
-                    data.current_status.humidity || '--';
-                document.getElementById('weather').textContent = 
-                    data.current_status.weather || '--';
-                document.getElementById('running').textContent = 
-                    data.current_status.running ? '✅ Running' : '❌ Stopped';
-                document.getElementById('lastUpdate').textContent = 
-                    new Date(data.timestamp).toLocaleString('zh-TW');
+                // Update status display with animations
+                const tempElement = document.getElementById('temperature');
+                const humidityElement = document.getElementById('humidity');
+                const weatherElement = document.getElementById('weather');
+                const runningElement = document.getElementById('running');
+                const lastUpdateElement = document.getElementById('lastUpdate');
                 
-                // Update form values
-                document.getElementById('displayMode').value = data.display_settings.mode;
+                // Check if values changed and add highlight animation
+                const newTemp = data.current_status.temperature?.toFixed(1) || '--';
+                const newHumidity = data.current_status.humidity || '--';
+                const newWeather = data.current_status.weather || '--';
+                const newRunning = data.current_status.running ? '✅ Running' : '❌ Stopped';
+                const newLastUpdate = new Date(data.timestamp).toLocaleString('zh-TW');
+                
+                if (tempElement.textContent !== newTemp) {
+                    tempElement.textContent = newTemp;
+                    tempElement.classList.add('updated');
+                    setTimeout(() => tempElement.classList.remove('updated'), 500);
+                }
+                
+                if (humidityElement.textContent !== newHumidity) {
+                    humidityElement.textContent = newHumidity;
+                    humidityElement.classList.add('updated');
+                    setTimeout(() => humidityElement.classList.remove('updated'), 500);
+                }
+                
+                if (weatherElement.textContent !== newWeather) {
+                    weatherElement.textContent = newWeather;
+                    weatherElement.classList.add('updated');
+                    setTimeout(() => weatherElement.classList.remove('updated'), 500);
+                }
+                
+                if (runningElement.textContent !== newRunning) {
+                    runningElement.textContent = newRunning;
+                    runningElement.classList.add('updated');
+                    setTimeout(() => runningElement.classList.remove('updated'), 500);
+                }
+                
+                lastUpdateElement.textContent = newLastUpdate;
+                
+                // Update form values with smooth transitions
+                const displayMode = document.getElementById('displayMode');
+                if (displayMode.value !== data.display_settings.mode) {
+                    displayMode.value = data.display_settings.mode;
+                    displayMode.classList.add('slide-in');
+                    setTimeout(() => displayMode.classList.remove('slide-in'), 300);
+                }
+                
                 document.getElementById('pageDuration').value = data.display_settings.page_duration;
                 document.getElementById('pageDurationValue').textContent = data.display_settings.page_duration + 's';
                 document.getElementById('brightness').value = data.display_settings.brightness;
@@ -422,6 +518,14 @@
         }
 
         async function saveDisplaySettings() {
+            const button = document.querySelector('button[onclick="saveDisplaySettings()"]');
+            const originalText = button.textContent;
+            
+            // Show loading state
+            button.disabled = true;
+            button.classList.add('loading');
+            button.textContent = 'Saving...';
+            
             const carouselItems = Array.from(document.querySelectorAll('input[name="carousel"]:checked'))
                 .map(cb => cb.value);
             
@@ -441,13 +545,33 @@
                     body: JSON.stringify(settings)
                 });
                 const result = await response.json();
+                
+                // Add success animation
+                if (result.success) {
+                    button.classList.add('fade-in');
+                    setTimeout(() => button.classList.remove('fade-in'), 500);
+                }
+                
                 showMessage(result.message, result.success ? 'success' : 'error');
             } catch (error) {
                 showMessage('Error saving settings: ' + error.message, 'error');
+            } finally {
+                // Restore button state
+                button.disabled = false;
+                button.classList.remove('loading');
+                button.textContent = originalText;
             }
         }
 
         async function saveIntervals() {
+            const button = document.querySelector('button[onclick="saveIntervals()"]');
+            const originalText = button.textContent;
+            
+            // Show loading state
+            button.disabled = true;
+            button.classList.add('loading');
+            button.textContent = 'Saving...';
+            
             const intervals = {
                 update_intervals: {
                     weather: parseInt(document.getElementById('weatherInterval').value) * 60,
@@ -463,13 +587,33 @@
                     body: JSON.stringify(intervals)
                 });
                 const result = await response.json();
+                
+                // Add success animation
+                if (result.success) {
+                    button.classList.add('fade-in');
+                    setTimeout(() => button.classList.remove('fade-in'), 500);
+                }
+                
                 showMessage(result.message, result.success ? 'success' : 'error');
             } catch (error) {
                 showMessage('Error saving intervals: ' + error.message, 'error');
+            } finally {
+                // Restore button state
+                button.disabled = false;
+                button.classList.remove('loading');
+                button.textContent = originalText;
             }
         }
 
         async function forceUpdate(type) {
+            const button = event.target;
+            const originalText = button.textContent;
+            
+            // Show loading state
+            button.disabled = true;
+            button.classList.add('loading');
+            button.textContent = 'Updating...';
+            
             try {
                 const response = await fetch('/api/force_update', {
                     method: 'POST',
@@ -477,12 +621,24 @@
                     body: JSON.stringify({ type })
                 });
                 const result = await response.json();
+                
+                // Add success animation
+                if (result.success) {
+                    button.classList.add('fade-in');
+                    setTimeout(() => button.classList.remove('fade-in'), 500);
+                }
+                
                 showMessage(result.message, result.success ? 'success' : 'error');
                 if (result.success) {
                     setTimeout(loadStatus, 2000);
                 }
             } catch (error) {
                 showMessage('Error triggering update: ' + error.message, 'error');
+            } finally {
+                // Restore button state
+                button.disabled = false;
+                button.classList.remove('loading');
+                button.textContent = originalText;
             }
         }
 

@@ -78,6 +78,10 @@ def update_settings():
     if 'display_settings' in data:
         state.display_settings.update(data['display_settings'])
         
+        # Apply display mode change immediately
+        if 'mode' in data['display_settings']:
+            state.display_manager.set_display_mode(data['display_settings']['mode'])
+        
         # Apply brightness change immediately
         if state.display_manager:
             if 'auto_brightness' in data['display_settings']:
@@ -105,7 +109,7 @@ def update_settings():
             if 'observation' in data['update_intervals']:
                 state.scheduler.observation_update_interval = data['update_intervals']['observation']
     
-    return jsonify({'success': True, 'message': 'Settings updated'})
+    return jsonify({'success': True, 'message': 'Settings updated successfully'})
 
 
 @app.route('/api/force_update', methods=['POST'])

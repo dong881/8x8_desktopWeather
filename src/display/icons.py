@@ -300,6 +300,25 @@ class WeatherIcons:
             for col in range(8):
                 if icon[row] & (1 << (7 - col)):
                     draw.point((x + col, y + row), fill=fill)
+    
+    @staticmethod
+    def draw_icon_fullscreen(draw, icon: List[int], fill: str = "white"):
+        """
+        Draw icon fullscreen and centered on 8x8 display
+        
+        Args:
+            draw: PIL Draw object
+            icon: Icon byte array
+            fill: Pixel color
+        """
+        # Clear the display first
+        draw.rectangle((0, 0, 7, 7), outline="black", fill="black")
+        
+        # Draw icon centered (8x8 icons fit perfectly)
+        for row in range(8):
+            for col in range(8):
+                if icon[row] & (1 << (7 - col)):
+                    draw.point((col, row), fill=fill)
 
 
 class AnimationFrames:
@@ -546,5 +565,53 @@ class AnimationFrames:
             0b10101010,
             0b00000000,
             0b01010101,
+        ],
+    ]
+    
+    # Cute wind animation frames (4 frames)
+    CUTE_WIND = [
+        # Frame 1 - wind lines moving right
+        [
+            0b00000000,
+            0b11111100,
+            0b00000110,
+            0b00000000,
+            0b01111111,
+            0b11000000,
+            0b00000000,
+            0b00000000,
+        ],
+        # Frame 2 - wind lines moving right more
+        [
+            0b00000000,
+            0b01111110,
+            0b00000011,
+            0b00000000,
+            0b00111111,
+            0b11100000,
+            0b00000000,
+            0b00000000,
+        ],
+        # Frame 3 - wind lines moving right further
+        [
+            0b00000000,
+            0b00111111,
+            0b00000001,
+            0b00000000,
+            0b00011111,
+            0b11110000,
+            0b00000000,
+            0b00000000,
+        ],
+        # Frame 4 - wind lines moving right most
+        [
+            0b00000000,
+            0b00011111,
+            0b00000000,
+            0b00000000,
+            0b00001111,
+            0b11111000,
+            0b00000000,
+            0b00000000,
         ],
     ]
