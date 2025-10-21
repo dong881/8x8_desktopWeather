@@ -364,25 +364,48 @@ class DisplayManager:
                     draw.point((x + col, y + row), fill="white")
     
     def show_temperature_bar(self, temperatures: List[int], rainfall: List[int], 
-                           current_col: int, blink: bool = True):
+                           current_col: int, blink: bool = True, duration: float = 2.0):
         """
-        Show temperature bars (original display mode)
+        Show temperature bars (original display mode) with blinking current column
         
         Args:
             temperatures: List of 8 temperature levels (0-7)
             rainfall: List of 8 rainfall indicators (0 or 1)
             current_col: Current time column to blink
             blink: Whether to blink current column
+            duration: Display duration in seconds
         """
-        with canvas(self.device) as draw:
-            for i in range(8):
-                if blink and i == current_col:
-                    continue
-                height = temperatures[i]
-                for j in range(height):
-                    draw.point((i, 7 - j - 1), fill="white")
-                if rainfall[i] == 1:
-                    draw.point((i, 7), fill="white")
+        if not blink:
+            # Static display without blinking
+            with canvas(self.device) as draw:
+                for i in range(8):
+                    height = temperatures[i]
+                    for j in range(height):
+                        draw.point((i, 7 - j - 1), fill="white")
+                    if rainfall[i] == 1:
+                        draw.point((i, 7), fill="white")
+            time.sleep(duration)
+        else:
+            # Blinking display for current column
+            end_time = time.time() + duration
+            blink_state = True
+            
+            while time.time() < end_time:
+                with canvas(self.device) as draw:
+                    for i in range(8):
+                        # Skip current column if blinking off
+                        if i == current_col and not blink_state:
+                            continue
+                            
+                        height = temperatures[i]
+                        for j in range(height):
+                            draw.point((i, 7 - j - 1), fill="white")
+                        if rainfall[i] == 1:
+                            draw.point((i, 7), fill="white")
+                
+                # Toggle blink state every 0.5 seconds
+                time.sleep(0.5)
+                blink_state = not blink_state
     
     def trigger_alert(self, alert_type: str, data: Dict[str, Any], duration: float = 60.0):
         """
