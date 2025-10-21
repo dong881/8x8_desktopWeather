@@ -25,7 +25,7 @@ class WebConfigState:
         }
         self.display_settings = {
             'mode': 'carousel',
-            'page_duration': 15.0,
+            'page_duration': 20.0,
             'carousel_items': ['temperature_bars', 'weather_icon', 'temperature_display'],
             'brightness': 255,
             'auto_brightness': True
@@ -140,8 +140,8 @@ def change_display_mode():
     
     # Apply mode change if display manager is available
     if state.display_manager:
-        # This would require extending display_manager with mode switching
-        pass
+        state.display_manager.set_display_mode(mode)
+        logger.info(f"Display mode changed to: {mode}")
     
     return jsonify({'success': True, 'message': f'Display mode changed to {mode}'})
 

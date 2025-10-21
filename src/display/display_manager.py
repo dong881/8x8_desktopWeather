@@ -58,31 +58,32 @@ class DisplayManager:
         
         # Brightness schedule (hour: brightness_level)
         # 0-255 scale, lower values for night, higher for day
+        # Improved night mode with darker settings
         self.brightness_schedule = {
-            0: 10,   # Midnight - very dim
-            1: 10,
-            2: 10,
-            3: 10,
-            4: 10,
-            5: 10,
-            6: 30,   # Dawn - gradually increase
-            7: 80,
-            8: 150,
-            9: 200,
-            10: 255, # Day - full brightness
-            11: 255,
-            12: 255,
-            13: 255,
-            14: 255,
-            15: 255,
-            16: 255,
-            17: 200,
-            18: 150, # Dusk - gradually decrease
-            19: 80,
-            20: 50,
-            21: 30,
-            22: 20,  # Night - dim
-            23: 10,
+            0: 5,    # Midnight - very dim
+            1: 5,
+            2: 5,
+            3: 5,
+            4: 5,
+            5: 8,    # Dawn - very gradual increase
+            6: 15,
+            7: 25,
+            8: 40,
+            9: 60,
+            10: 80,  # Day - moderate brightness
+            11: 100,
+            12: 120,
+            13: 120,
+            14: 100,
+            15: 80,
+            16: 60,
+            17: 40,  # Dusk - gradual decrease
+            18: 25,
+            19: 15,
+            20: 10,  # Night - very dim
+            21: 8,
+            22: 6,
+            23: 5,
         }
     
     def add_page(self, page: DisplayPage):
@@ -143,6 +144,8 @@ class DisplayManager:
         else:
             brightness = 255  # Default to full brightness
         
+        # Ensure brightness is within valid range
+        brightness = max(0, min(255, brightness))
         self.device.contrast(brightness)
     
     def update_brightness(self):
@@ -161,10 +164,16 @@ class DisplayManager:
         """
         icon = WeatherIcons.get_icon(icon_name)
         
-        if animate and icon_name.upper() == 'RAINY':
-            self.animator.rain_animation(duration)
-        elif animate and icon_name.upper() == 'SUNNY':
-            self.animator.sun_animation(duration)
+        if animate:
+            if icon_name.upper() == 'RAINY':
+                self.animator.cute_rain_animation(duration)
+            elif icon_name.upper() == 'SUNNY':
+                self.animator.cute_sun_animation(duration)
+            elif icon_name.upper() == 'CLOUDY':
+                self.animator.cute_cloud_animation(duration)
+            else:
+                # Default cute animation for other icons
+                self.animator.blink(icon, duration, blink_rate=0.8)
         else:
             with canvas(self.device) as draw:
                 WeatherIcons.draw_icon(draw, 0, 0, icon)
@@ -178,7 +187,25 @@ class DisplayManager:
             text: Text to display
             speed: Scroll speed
         """
-        self.animator.scroll_text_horizontal(text, speed)
+        # Simple scrolling text implementation
+        text_width = len(text) * 4  # Approximate width per character
+        scroll_positions = text_width + 8  # Scroll from right to left
+        
+        for pos in range(scroll_positions):
+            with canvas(self.device) as draw:
+                # Calculate which part of text to show
+                start_char = max(0, (pos - 8) // 4)
+                end_char = min(len(text), (pos + 8) // 4 + 1)
+                
+                if start_char < len(text):
+                    visible_text = text[start_char:end_char]
+                    text_x = 8 - pos + start_char * 4
+                    
+                    # Draw visible text
+                    if text_x < 8:
+                        self._draw_simple_text(draw, max(0, text_x), 1, visible_text)
+            
+            time.sleep(speed)
     
     def show_mixed(self, icon_name: str, text: str, duration: float = 10.0):
         """
@@ -192,19 +219,134 @@ class DisplayManager:
         icon = WeatherIcons.get_icon(icon_name)
         
         with canvas(self.device) as draw:
-            # Draw icon on left half (scaled down to 4 pixels wide)
+            # Draw icon on left half (4x8 pixels)
             for row in range(8):
                 for col in range(4):
-                    # Sample every other pixel from icon
+                    # Sample every other pixel from icon for 4-pixel width
                     if icon[row] & (1 << (7 - col * 2)):
                         draw.point((col, row), fill="white")
             
-            # Draw text on right half
-            from luma.core.legacy.font import proportional, TINY_FONT
-            from luma.core.legacy import text as draw_text
-            draw_text(draw, (4, 0), text, fill="white", font=proportional(TINY_FONT))
+            # Draw text on right half using simple pixel font
+            self._draw_simple_text(draw, 4, 1, text)
         
         time.sleep(duration)
+    
+    def _draw_simple_text(self, draw, x: int, y: int, text: str):
+        """Draw simple text using pixel patterns"""
+        char_width = 3
+        char_height = 5
+        
+        for i, char in enumerate(text[:2]):  # Max 2 characters for 4-pixel width
+            char_x = x + i * char_width
+            if char_x + char_width > 8:
+                break
+            self._draw_simple_char(draw, char_x, y, char)
+    
+    def _draw_simple_char(self, draw, x: int, y: int, char: str):
+        """Draw a simple character using pixel patterns"""
+        char_height = 5
+        char_width = 3
+        
+        # Simple 3x5 pixel font patterns
+        patterns = {
+            '0': [
+                [1, 1, 1],
+                [1, 0, 1],
+                [1, 0, 1],
+                [1, 0, 1],
+                [1, 1, 1]
+            ],
+            '1': [
+                [0, 1, 0],
+                [1, 1, 0],
+                [0, 1, 0],
+                [0, 1, 0],
+                [1, 1, 1]
+            ],
+            '2': [
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1],
+                [1, 0, 0],
+                [1, 1, 1]
+            ],
+            '3': [
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1]
+            ],
+            '4': [
+                [1, 0, 1],
+                [1, 0, 1],
+                [1, 1, 1],
+                [0, 0, 1],
+                [0, 0, 1]
+            ],
+            '5': [
+                [1, 1, 1],
+                [1, 0, 0],
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1]
+            ],
+            '6': [
+                [1, 1, 1],
+                [1, 0, 0],
+                [1, 1, 1],
+                [1, 0, 1],
+                [1, 1, 1]
+            ],
+            '7': [
+                [1, 1, 1],
+                [0, 0, 1],
+                [0, 0, 1],
+                [0, 0, 1],
+                [0, 0, 1]
+            ],
+            '8': [
+                [1, 1, 1],
+                [1, 0, 1],
+                [1, 1, 1],
+                [1, 0, 1],
+                [1, 1, 1]
+            ],
+            '9': [
+                [1, 1, 1],
+                [1, 0, 1],
+                [1, 1, 1],
+                [0, 0, 1],
+                [1, 1, 1]
+            ],
+            '°': [
+                [0, 1, 0],
+                [1, 0, 1],
+                [0, 1, 0],
+                [0, 0, 0],
+                [0, 0, 0]
+            ],
+            'C': [
+                [1, 1, 1],
+                [1, 0, 0],
+                [1, 0, 0],
+                [1, 0, 0],
+                [1, 1, 1]
+            ],
+            'F': [
+                [1, 1, 1],
+                [1, 0, 0],
+                [1, 1, 0],
+                [1, 0, 0],
+                [1, 0, 0]
+            ]
+        }
+        
+        pattern = patterns.get(char, patterns['0'])
+        for row in range(min(char_height, 8 - y)):
+            for col in range(min(char_width, 8 - x)):
+                if pattern[row][col]:
+                    draw.point((x + col, y + row), fill="white")
     
     def show_temperature_bar(self, temperatures: List[int], rainfall: List[int], 
                            current_col: int, blink: bool = True):
@@ -237,33 +379,38 @@ class DisplayManager:
             duration: Alert display duration
         """
         self.alert_active = True
+        end_time = time.time() + min(duration, 30.0)  # Max 30 seconds
         
-        if alert_type == 'earthquake':
-            # Show earthquake animation
-            self.animator.earthquake_shake(duration=min(duration, 10.0))
+        while time.time() < end_time and self.alert_active:
+            if alert_type == 'earthquake':
+                # Show earthquake animation
+                self.animator.earthquake_shake(duration=2.0)
+                
+                # Show earthquake details as scrolling text
+                magnitude = data.get('magnitude', 'N/A')
+                location = data.get('location', 'Unknown')
+                text = f"EQ M{magnitude} {location[:8]}"
+                self.show_text_scroll(text, speed=0.08)
             
-            # Show earthquake details as scrolling text
-            magnitude = data.get('magnitude', 'N/A')
-            location = data.get('location', 'Unknown')
-            text = f"EARTHQUAKE M{magnitude} {location}"
-            self.show_text_scroll(text, speed=0.03)
-        
-        elif alert_type == 'typhoon':
-            # Show typhoon icon with blinking
-            self.animator.blink(WeatherIcons.TYPHOON, duration=min(duration, 10.0))
+            elif alert_type == 'typhoon':
+                # Show typhoon icon with blinking
+                self.animator.blink(WeatherIcons.TYPHOON, duration=2.0)
+                
+                # Show typhoon details
+                name = data.get('name', 'TYPHOON')
+                text = f"TYPHOON {name[:6]}"
+                self.show_text_scroll(text, speed=0.08)
             
-            # Show typhoon details
-            name = data.get('name', 'TYPHOON')
-            text = f"TYPHOON {name} ALERT"
-            self.show_text_scroll(text, speed=0.03)
-        
-        elif alert_type == 'warning':
-            # Show warning icon with blinking
-            self.animator.blink(WeatherIcons.WARNING, duration=min(duration, 10.0))
+            elif alert_type == 'warning':
+                # Show warning icon with blinking
+                self.animator.blink(WeatherIcons.WARNING, duration=2.0)
+                
+                # Show warning message
+                message = data.get('message', 'WARNING')
+                self.show_text_scroll(message[:12], speed=0.08)
             
-            # Show warning message
-            message = data.get('message', 'WARNING')
-            self.show_text_scroll(message, speed=0.03)
+            # Brief pause between alert cycles
+            time.sleep(0.5)
         
         self.alert_active = False
     
@@ -371,3 +518,89 @@ class DisplayManager:
         
         time.sleep(0.3)
         self.device.clear()
+    
+    def set_display_mode(self, mode: str):
+        """
+        Set the current display mode
+        
+        Args:
+            mode: Display mode ('carousel', 'icon', 'scrolling', 'mixed', 'alert')
+        """
+        self.current_mode = mode
+    
+    def show_mode_content(self, weather_data: Dict[str, Any] = None, temperature_data: List[int] = None, 
+                         rainfall_data: List[int] = None, current_col: int = 0):
+        """
+        Show content based on current display mode
+        
+        Args:
+            weather_data: Current weather observation data
+            temperature_data: Temperature levels for bar display
+            rainfall_data: Rainfall levels for bar display
+            current_col: Current time column for blinking
+        """
+        if self.current_mode == self.MODE_ICON:
+            if weather_data and weather_data.get('weather') != 'N/A':
+                weather_desc = weather_data.get('weather', '')
+                icon_name = self._get_weather_icon_name(weather_desc)
+                self.show_icon(icon_name, duration=8.0, animate=True)
+            else:
+                # Default sunny icon if no weather data
+                self.show_icon('sunny', duration=8.0, animate=True)
+        
+        elif self.current_mode == self.MODE_SCROLLING:
+            if weather_data:
+                temp = weather_data.get('temperature', 0)
+                weather = weather_data.get('weather', 'N/A')
+                text = f"{temp:.0f}°C {weather[:8]}"
+            else:
+                text = "NO DATA"
+            self.show_text_scroll(text, speed=0.08)
+        
+        elif self.current_mode == self.MODE_MIXED:
+            if weather_data and weather_data.get('weather') != 'N/A':
+                weather_desc = weather_data.get('weather', '')
+                icon_name = self._get_weather_icon_name(weather_desc)
+                temp = weather_data.get('temperature', 0)
+                text = f"{temp:.0f}°C"
+            else:
+                icon_name = 'sunny'
+                text = "N/A"
+            self.show_mixed(icon_name, text, duration=8.0)
+        
+        elif self.current_mode == self.MODE_ALERT:
+            # Show alert mode - blinking warning
+            self.animator.blink(WeatherIcons.WARNING, duration=3.0)
+            if weather_data:
+                temp = weather_data.get('temperature', 0)
+                text = f"ALERT {temp:.0f}°C"
+            else:
+                text = "ALERT MODE"
+            self.show_text_scroll(text, speed=0.1)
+        
+        else:  # MODE_CAROUSEL or default
+            # Show temperature bars (original display)
+            if temperature_data and rainfall_data:
+                self.show_temperature_bar(temperature_data, rainfall_data, current_col, blink=True)
+            else:
+                # Fallback to icon display
+                self.show_icon('sunny', duration=5.0)
+    
+    def _get_weather_icon_name(self, weather_desc: str) -> str:
+        """Get appropriate icon name from weather description"""
+        weather_desc = weather_desc.lower()
+        
+        if 'sun' in weather_desc or 'clear' in weather_desc:
+            return 'sunny'
+        elif 'rain' in weather_desc or 'shower' in weather_desc:
+            return 'rainy'
+        elif 'cloud' in weather_desc or 'overcast' in weather_desc:
+            return 'cloudy'
+        elif 'thunder' in weather_desc or 'storm' in weather_desc:
+            return 'thunderstorm'
+        elif 'snow' in weather_desc:
+            return 'snowy'
+        elif 'wind' in weather_desc:
+            return 'windy'
+        else:
+            return 'sunny'  # Default

@@ -21,13 +21,13 @@ class AnimationEngine:
         """
         self.device = device
     
-    def rain_animation(self, duration: float = 3.0, fps: int = 10):
+    def rain_animation(self, duration: float = 6.0, fps: int = 5):
         """
-        Animate rain falling effect
+        Animate rain falling effect with cute bouncing drops
         
         Args:
-            duration: Animation duration in seconds
-            fps: Frames per second
+            duration: Animation duration in seconds (doubled for slower animation)
+            fps: Frames per second (reduced for slower animation)
         """
         frames = AnimationFrames.RAIN
         frame_delay = 1.0 / fps
@@ -41,13 +41,13 @@ class AnimationEngine:
                     WeatherIcons.draw_icon(draw, 0, 0, frame)
                 time.sleep(frame_delay)
     
-    def sun_animation(self, duration: float = 2.0, blink_rate: float = 0.5):
+    def sun_animation(self, duration: float = 4.0, blink_rate: float = 1.0):
         """
-        Animate sun shining effect (blinking rays)
+        Animate sun shining effect (blinking rays) - slower and cuter
         
         Args:
-            duration: Animation duration in seconds
-            blink_rate: Time between blinks in seconds
+            duration: Animation duration in seconds (doubled for slower animation)
+            blink_rate: Time between blinks in seconds (doubled for slower animation)
         """
         frames = AnimationFrames.SUN
         end_time = time.time() + duration
@@ -173,3 +173,60 @@ class AnimationEngine:
             for y in range(-8, 1):
                 virtual.set_position((0, y))
                 time.sleep(0.05)
+    
+    def cute_cloud_animation(self, duration: float = 4.0):
+        """
+        Animate cute cloud floating effect
+        
+        Args:
+            duration: Animation duration in seconds
+        """
+        frames = AnimationFrames.CUTE_CLOUD
+        frame_delay = 0.8  # Slower animation
+        end_time = time.time() + duration
+        
+        while time.time() < end_time:
+            for frame in frames:
+                if time.time() >= end_time:
+                    break
+                with canvas(self.device) as draw:
+                    WeatherIcons.draw_icon(draw, 0, 0, frame)
+                time.sleep(frame_delay)
+    
+    def cute_sun_animation(self, duration: float = 4.0):
+        """
+        Animate cute sun with winking effect
+        
+        Args:
+            duration: Animation duration in seconds
+        """
+        frames = AnimationFrames.CUTE_SUN
+        frame_delay = 1.2  # Slower animation
+        end_time = time.time() + duration
+        
+        while time.time() < end_time:
+            for frame in frames:
+                if time.time() >= end_time:
+                    break
+                with canvas(self.device) as draw:
+                    WeatherIcons.draw_icon(draw, 0, 0, frame)
+                time.sleep(frame_delay)
+    
+    def cute_rain_animation(self, duration: float = 6.0):
+        """
+        Animate cute rain with bouncing drops
+        
+        Args:
+            duration: Animation duration in seconds
+        """
+        frames = AnimationFrames.CUTE_RAIN
+        frame_delay = 0.6  # Slower animation
+        end_time = time.time() + duration
+        
+        while time.time() < end_time:
+            for frame in frames:
+                if time.time() >= end_time:
+                    break
+                with canvas(self.device) as draw:
+                    WeatherIcons.draw_icon(draw, 0, 0, frame)
+                time.sleep(frame_delay)
