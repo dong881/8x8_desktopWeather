@@ -93,6 +93,13 @@ class EnhancedWeatherDisplay:
             )
             
             logger.info(f"Weather updated: Temp={self.temperature_levels}, Rain={self.rainfall_levels}")
+        else:
+            # If weather data processing failed, create fallback data
+            logger.warning("Weather data processing failed, using fallback data")
+            self.temperature_levels = [3, 4, 5, 6, 6, 5, 4, 3]  # Default temperature pattern
+            self.rainfall_levels = [0, 0, 1, 0, 0, 0, 0, 0]  # Default rain pattern
+            now = datetime.now()
+            self.current_hour_index = self.processor.calculate_time_index(now.hour)
     
     def on_earthquake_detected(self, eq_data):
         """Handle earthquake detection"""
@@ -261,10 +268,12 @@ class EnhancedWeatherDisplay:
                         if len(self.display_manager.pages) > 0:
                             self.display_manager.rotate_pages()
                         else:
-                            # Fallback: show basic temperature bars
+                            # Fallback: show basic temperature bars with default data
+                            temp_data = self.temperature_levels if self.temperature_levels else [3, 4, 5, 6, 6, 5, 4, 3]
+                            rain_data = self.rainfall_levels if self.rainfall_levels else [0, 0, 1, 0, 0, 0, 0, 0]
                             self.display_manager.show_temperature_bar(
-                                self.temperature_levels or [0] * 8,
-                                self.rainfall_levels or [0] * 8,
+                                temp_data,
+                                rain_data,
                                 self.current_hour_index,
                                 blink=True
                             )
