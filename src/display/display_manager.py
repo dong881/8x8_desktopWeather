@@ -57,33 +57,33 @@ class DisplayManager:
         self.manual_brightness = None  # Override auto brightness if set
         
         # Brightness schedule (hour: brightness_level)
-        # 0-255 scale, lower values for night, higher for day
-        # Improved night mode with darker settings
+        # 0-255 scale, only dim during midnight to 6am (00:00-06:00)
+        # Full brightness all other times
         self.brightness_schedule = {
-            0: 5,    # Midnight - very dim
-            1: 5,
-            2: 5,
-            3: 5,
-            4: 5,
-            5: 8,    # Dawn - very gradual increase
-            6: 15,
-            7: 25,
-            8: 40,
-            9: 60,
-            10: 80,  # Day - moderate brightness
-            11: 100,
-            12: 120,
-            13: 120,
-            14: 100,
-            15: 80,
-            16: 60,
-            17: 40,  # Dusk - gradual decrease
-            18: 25,
-            19: 15,
-            20: 10,  # Night - very dim
-            21: 8,
-            22: 6,
-            23: 5,
+            0: 5,     # Midnight - very dim
+            1: 5,     # 1am - very dim
+            2: 5,     # 2am - very dim
+            3: 5,     # 3am - very dim
+            4: 5,     # 4am - very dim
+            5: 10,    # 5am - slightly brighter
+            6: 100,   # 6am - return to normal brightness
+            7: 120,   # Morning - bright
+            8: 140,   # Morning - bright
+            9: 160,   # Day - bright
+            10: 180,  # Day - bright
+            11: 200,  # Midday - very bright
+            12: 220,  # Midday - very bright
+            13: 220,  # Afternoon - very bright
+            14: 200,  # Afternoon - very bright
+            15: 180,  # Afternoon - bright
+            16: 160,  # Evening - bright
+            17: 140,  # Evening - bright
+            18: 120,  # Evening - normal
+            19: 120,  # Evening - normal
+            20: 120,  # Night - normal (NOT dimmed)
+            21: 120,  # Night - normal (NOT dimmed)
+            22: 120,  # Night - normal (NOT dimmed)
+            23: 120,  # Night - normal (NOT dimmed)
         }
     
     def add_page(self, page: DisplayPage):
@@ -428,10 +428,10 @@ class DisplayManager:
     
     def rotate_pages(self, duration: float = None):
         """
-        Display pages in rotation
+        Display current page and advance to next (handles rotation automatically)
         
         Args:
-            duration: Override default page duration
+            duration: Override default page duration (if None, uses page's duration)
         """
         if not self.pages:
             return
@@ -443,17 +443,17 @@ class DisplayManager:
         # Sort pages by priority (1=highest)
         sorted_pages = sorted(self.pages, key=lambda p: p.priority)
         
-        # Display current page
+        # Get current page
         page = sorted_pages[self.current_page_idx % len(sorted_pages)]
         
-        # Execute page content callback
+        # Execute page content callback to display the page
         page.content_callback(self.device)
         
-        # Wait for page duration
+        # Wait for page duration before moving to next
         page_duration = duration if duration is not None else page.duration
         time.sleep(page_duration)
         
-        # Move to next page
+        # Advance to next page for subsequent call
         self.current_page_idx = (self.current_page_idx + 1) % len(sorted_pages)
     
     def transition_to(self, content_callback: Callable, transition: str = "fade"):
