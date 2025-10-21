@@ -174,15 +174,15 @@ class AnimationEngine:
                 virtual.set_position((0, y))
                 time.sleep(0.05)
     
-    def cute_cloud_animation(self, duration: float = 4.0):
+    def cute_cloud_animation(self, duration: float = 6.0):
         """
-        Animate cute cloud floating effect
+        Animate cute cloud floating effect with more expressive movements
         
         Args:
             duration: Animation duration in seconds
         """
         frames = AnimationFrames.CUTE_CLOUD
-        frame_delay = 0.8  # Slower animation
+        frame_delay = 1.2  # Even slower for more detailed animation
         end_time = time.time() + duration
         
         while time.time() < end_time:
@@ -193,15 +193,15 @@ class AnimationEngine:
                     WeatherIcons.draw_icon(draw, 0, 0, frame)
                 time.sleep(frame_delay)
     
-    def cute_sun_animation(self, duration: float = 4.0):
+    def cute_sun_animation(self, duration: float = 6.0):
         """
-        Animate cute sun with winking effect
+        Animate cute sun with expressive winking and smiling effects
         
         Args:
             duration: Animation duration in seconds
         """
         frames = AnimationFrames.CUTE_SUN
-        frame_delay = 1.2  # Slower animation
+        frame_delay = 1.0  # Perfect timing for expressive animation
         end_time = time.time() + duration
         
         while time.time() < end_time:
@@ -212,15 +212,71 @@ class AnimationEngine:
                     WeatherIcons.draw_icon(draw, 0, 0, frame)
                 time.sleep(frame_delay)
     
-    def cute_rain_animation(self, duration: float = 6.0):
+    def cute_rain_animation(self, duration: float = 8.0):
         """
-        Animate cute rain with bouncing drops
+        Animate cute rain with bouncing drops and expressive cloud
         
         Args:
             duration: Animation duration in seconds
         """
         frames = AnimationFrames.CUTE_RAIN
-        frame_delay = 0.6  # Slower animation
+        frame_delay = 0.8  # Slower for more detailed rain animation
+        end_time = time.time() + duration
+        
+        while time.time() < end_time:
+            for frame in frames:
+                if time.time() >= end_time:
+                    break
+                with canvas(self.device) as draw:
+                    WeatherIcons.draw_icon(draw, 0, 0, frame)
+                time.sleep(frame_delay)
+    def cute_snow_animation(self, duration: float = 6.0):
+        """
+        Animate cute snow with gentle falling flakes
+        
+        Args:
+            duration: Animation duration in seconds
+        """
+        frames = AnimationFrames.CUTE_SNOW
+        frame_delay = 1.0  # Gentle, magical timing
+        end_time = time.time() + duration
+        
+        while time.time() < end_time:
+            for frame in frames:
+                if time.time() >= end_time:
+                    break
+                with canvas(self.device) as draw:
+                    WeatherIcons.draw_icon(draw, 0, 0, frame)
+                time.sleep(frame_delay)
+    
+    def cute_wind_animation(self, duration: float = 5.0):
+        """
+        Animate cute wind with playful movement
+        
+        Args:
+            duration: Animation duration in seconds
+        """
+        frames = AnimationFrames.CUTE_WIND
+        frame_delay = 0.6  # Dynamic wind movement
+        end_time = time.time() + duration
+        
+        while time.time() < end_time:
+            for frame in frames:
+                if time.time() >= end_time:
+                    break
+                with canvas(self.device) as draw:
+                    WeatherIcons.draw_icon(draw, 0, 0, frame)
+                time.sleep(frame_delay)
+    
+    def cute_thunderstorm_animation(self, duration: float = 7.0):
+        """
+        Animate cute thunderstorm with dramatic but adorable effects
+        
+        Args:
+            duration: Animation duration in seconds
+        """
+        frames = AnimationFrames.CUTE_THUNDERSTORM
+        frame_delay = 0.7  # Dramatic but not too fast
         end_time = time.time() + duration
         
         while time.time() < end_time:

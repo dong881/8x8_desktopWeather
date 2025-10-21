@@ -139,7 +139,7 @@ class EnhancedWeatherDisplay:
         # Get carousel items from settings
         carousel_items = state.display_settings.get('carousel_items', 
                                                      ['temperature_bars', 'weather_icon', 'temperature_display'])
-        page_duration = state.display_settings.get('page_duration', 8.0)  # Shorter duration for better rotation
+        page_duration = state.display_settings.get('page_duration', 10.0)  # Longer duration to ensure animations complete
         
         # Page 1: Traditional temperature bar display with blinking
         if 'temperature_bars' in carousel_items:
@@ -266,8 +266,8 @@ class EnhancedWeatherDisplay:
                     # Display content based on current mode
                     if self.display_manager.current_mode == 'carousel':
                         if len(self.display_manager.pages) > 0:
-                            # Use shorter duration for better rotation
-                            self.display_manager.rotate_pages(duration=8.0)
+                            # Use longer duration to ensure animations complete
+                            self.display_manager.rotate_pages(duration=10.0)
                         else:
                             # Fallback: show basic temperature bars with default data
                             temp_data = self.temperature_levels if self.temperature_levels else [3, 4, 5, 6, 6, 5, 4, 3]
@@ -277,7 +277,7 @@ class EnhancedWeatherDisplay:
                                 rain_data,
                                 self.current_hour_index,
                                 blink=True,
-                                duration=8.0
+                                duration=10.0
                             )
                     else:
                         # Other modes
