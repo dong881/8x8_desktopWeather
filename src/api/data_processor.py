@@ -23,6 +23,14 @@ class DataProcessor:
             Tuple of (temperature_levels, rainfall_levels) or None
         """
         try:
+            if not data or 'records' not in data:
+                print("Error: No records in weather forecast data")
+                return None
+            
+            if 'Locations' not in data['records'] or not data['records']['Locations']:
+                print("Error: No Locations in weather forecast records")
+                return None
+            
             location_data = data["records"]["Locations"][0]["Location"][0]
             
             # Support both old (WeatherElement) and new (weatherElement) formats
@@ -59,7 +67,10 @@ class DataProcessor:
                     # Support both Temperature and temperature field names
                     temp = element_value[0].get('Temperature') or element_value[0].get('temperature')
                     if temp:
-                        temp_values.append(int(temp))
+                        try:
+                            temp_values.append(int(float(temp)))
+                        except (ValueError, TypeError):
+                            continue
             
             # Extract precipitation probabilities
             pop_values = []
@@ -69,7 +80,10 @@ class DataProcessor:
                     # Support both Probability and probability field names
                     prob = element_value[0].get('Probability') or element_value[0].get('probability')
                     if prob:
-                        pop_values.append(int(prob))
+                        try:
+                            pop_values.append(int(float(prob)))
+                        except (ValueError, TypeError):
+                            continue
             
             if not temp_values or not pop_values:
                 print(f"Error: Failed to extract temperature or precipitation values")
@@ -79,6 +93,7 @@ class DataProcessor:
             temp_levels = DataProcessor._temperature_to_levels(temp_values)
             pop_levels = DataProcessor._precipitation_to_levels(pop_values)
             
+            print(f"Weather forecast processed: temp_levels={temp_levels}, pop_levels={pop_levels}")
             return temp_levels, pop_levels
         
         except Exception as e:
@@ -102,6 +117,9 @@ class DataProcessor:
         Returns:
             List of LED levels (0-7)
         """
+        if not temperatures:
+            return [0] * 8
+        
         levels = []
         for temp in temperatures:
             # Clamp temperature to range
@@ -111,7 +129,11 @@ class DataProcessor:
             level = round(7 * (temp - min_temp) / (max_temp - min_temp))
             levels.append(level)
         
-        return levels
+        # Ensure we have exactly 8 levels
+        while len(levels) < 8:
+            levels.append(0)
+        
+        return levels[:8]
     
     @staticmethod
     def _precipitation_to_levels(probabilities: List[int], 
@@ -126,6 +148,9 @@ class DataProcessor:
         Returns:
             List of binary indicators (0 or 1)
         """
+        if not probabilities:
+            return [0] * 8
+        
         levels = []
         for prob in probabilities:
             # Each probability covers 6 hours, but we need values for 3-hour periods
@@ -133,7 +158,11 @@ class DataProcessor:
             indicator = 1 if prob >= threshold else 0
             levels.extend([indicator, indicator])
         
-        return levels
+        # Ensure we have exactly 8 levels
+        while len(levels) < 8:
+            levels.append(0)
+        
+        return levels[:8]
     
     @staticmethod
     def process_observation_data(data: Dict) -> Optional[Dict]:
@@ -175,12 +204,12 @@ class DataProcessor:
             
             # Handle string values that might be '-' or invalid
             try:
-                temp_value = float(temp) if temp and temp != '-' else 0.0
+                temp_value = float(temp) if temp and temp != '-' and temp != 'N/A' else 0.0
             except (ValueError, TypeError):
                 temp_value = 0.0
                 
             try:
-                humidity_value = int(float(humidity)) if humidity and humidity != '-' else 0
+                humidity_value = int(float(humidity)) if humidity and humidity != '-' and humidity != 'N/A' else 0
             except (ValueError, TypeError):
                 humidity_value = 0
             
@@ -188,12 +217,16 @@ class DataProcessor:
                 'time': obs_time,
                 'temperature': temp_value,
                 'humidity': humidity_value,
-                'weather': weather if weather and weather != '-' else 'N/A'
+                'weather': weather if weather and weather != '-' and weather != 'N/A' else 'N/A'
             }
             
-            # Log if we got zero/invalid values
-            if temp_value == 0.0 or humidity_value == 0 or weather == 'N/A':
-                print(f"Warning: Observation data has missing values - Temp: {temp}, Humidity: {humidity}, Weather: {weather}")
+            # Log the processed data
+            print(f"Observation data processed: {result}")
+            
+            # Only return None if we have completely invalid data
+            if temp_value == 0.0 and humidity_value == 0 and weather == 'N/A':
+                print("Warning: All observation data is missing or invalid")
+                return None
             
             return result
         

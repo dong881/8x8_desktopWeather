@@ -58,14 +58,21 @@ def get_status():
     }
     
     # Add real-time data from display manager if available
-    if state.enhanced_display and state.enhanced_display.observation_data:
-        obs_data = state.enhanced_display.observation_data
-        status['current_status'].update({
-            'temperature': obs_data.get('temperature', 0),
-            'humidity': obs_data.get('humidity', 0),
-            'weather': obs_data.get('weather', 'N/A'),
-            'running': True
-        })
+    if state.enhanced_display:
+        if state.enhanced_display.observation_data:
+            obs_data = state.enhanced_display.observation_data
+            status['current_status'].update({
+                'temperature': obs_data.get('temperature', 0),
+                'humidity': obs_data.get('humidity', 0),
+                'weather': obs_data.get('weather', 'N/A'),
+                'running': True
+            })
+        else:
+            # Show that system is running but no data yet
+            status['current_status'].update({
+                'running': True,
+                'last_update': datetime.now().isoformat()
+            })
     
     return jsonify(status)
 

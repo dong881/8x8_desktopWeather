@@ -138,12 +138,16 @@ class EnhancedWeatherDisplay:
         if 'temperature_bars' in carousel_items:
             def show_temp_bars(device):
                 with canvas(device) as draw:
+                    # Ensure we have valid data
+                    temp_levels = self.temperature_levels if self.temperature_levels else [0] * 8
+                    rain_levels = self.rainfall_levels if self.rainfall_levels else [0] * 8
+                    
                     for i in range(8):
-                        if i < len(self.temperature_levels):
-                            height = self.temperature_levels[i]
+                        if i < len(temp_levels):
+                            height = min(7, max(0, temp_levels[i]))  # Ensure height is 0-7
                             for j in range(height):
                                 draw.point((i, 7 - j - 1), fill="white")
-                            if i < len(self.rainfall_levels) and self.rainfall_levels[i] == 1:
+                            if i < len(rain_levels) and rain_levels[i] == 1:
                                 draw.point((i, 7), fill="white")
             
             self.display_manager.add_page(
@@ -151,22 +155,27 @@ class EnhancedWeatherDisplay:
             )
         
         # Page 2: Weather icon display with animation
-        if 'weather_icon' in carousel_items and self.observation_data and self.observation_data.get('weather') != 'N/A':
-            weather_desc = self.observation_data.get('weather', '')
+        if 'weather_icon' in carousel_items:
+            weather_desc = ''
+            if self.observation_data and self.observation_data.get('weather') != 'N/A':
+                weather_desc = self.observation_data.get('weather', '')
             icon_name = self.processor.get_weather_icon_name(weather_desc)
             
             def show_weather_icon(device):
-                # Draw animated weather icon
-                # Note: duration is handled by page duration, so use shorter animation cycle
-                self.display_manager.show_icon(icon_name, duration=5.0, animate=True)
+                # Draw weather icon directly without calling show_icon to avoid recursion
+                icon = WeatherIcons.get_icon(icon_name)
+                with canvas(device) as draw:
+                    WeatherIcons.draw_icon(draw, 0, 0, icon)
             
             self.display_manager.add_page(
                 DisplayPage("weather_icon", show_weather_icon, duration=page_duration, priority=3)
             )
         
         # Page 3: Temperature display (full screen, centered with proper digit spacing)
-        if 'temperature_display' in carousel_items and self.observation_data and self.observation_data.get('temperature', 0) > 0:
-            temp = int(self.observation_data.get('temperature', 0))
+        if 'temperature_display' in carousel_items:
+            temp = 0
+            if self.observation_data and self.observation_data.get('temperature', 0) > 0:
+                temp = int(self.observation_data.get('temperature', 0))
             
             def show_temperature(device):
                 with canvas(device) as draw:
@@ -195,7 +204,7 @@ class EnhancedWeatherDisplay:
             )
     
     def run(self):
-        """Main run loop"""
+        """Main run loop - simplified and robust"""
         try:
             # Show startup logo
             logger.info("Showing startup animation...")
@@ -205,8 +214,8 @@ class EnhancedWeatherDisplay:
             logger.info("Fetching initial weather data...")
             self.scheduler.force_weather_update()
             
-            # Wait a moment for data
-            time.sleep(2)
+            # Wait for initial data
+            time.sleep(3)
             
             # Start background scheduler
             logger.info("Starting background scheduler...")
@@ -216,15 +225,10 @@ class EnhancedWeatherDisplay:
             logger.info("Starting web configuration interface on port 5000...")
             start_web_server(self.display_manager, self.scheduler, self)
             
-            # Create display pages
-            self.create_display_pages()
-            
-            # Main display loop
+            # Main display loop - simplified
             logger.info("Entering main display loop...")
-            update_counter = 0
-            last_page_rotation = time.time()
             last_brightness_update = time.time()
-            last_mode_check = time.time()
+            last_page_update = time.time()
             
             while True:
                 try:
@@ -235,40 +239,43 @@ class EnhancedWeatherDisplay:
                         self.display_manager.update_brightness()
                         last_brightness_update = current_time
                     
-                    # Check if we need to update current hour index
+                    # Update current hour index
                     now = datetime.now()
                     new_hour_index = self.processor.calculate_time_index(now.hour)
-                    
                     if new_hour_index != self.current_hour_index:
                         self.current_hour_index = new_hour_index
                         logger.info(f"Hour changed to {now.hour}:00, display index updated to: {new_hour_index}")
                     
                     # Check for alerts first
                     if self.display_manager.alert_active:
-                        # Alert mode - let alert handle display
                         time.sleep(1)
                         continue
                     
+                    # Update display pages every 10 seconds
+                    if current_time - last_page_update >= 10:
+                        self.create_display_pages()
+                        last_page_update = current_time
+                    
                     # Display content based on current mode
-                    self.display_manager.show_mode_content(
-                        weather_data=self.observation_data,
-                        temperature_data=self.temperature_levels,
-                        rainfall_data=self.rainfall_levels,
-                        current_col=self.current_hour_index
-                    )
-                    
-                    update_counter += 1
-                    
-                    # Rotate through display pages in carousel mode
                     if self.display_manager.current_mode == 'carousel':
-                        # Recreate pages to ensure fresh data
-                        if current_time - last_page_rotation >= 1:  # Check every second
-                            self.create_display_pages()
-                            if len(self.display_manager.pages) > 0:
-                                # Rotate to next page (display_manager handles timing internally)
-                                self.display_manager.rotate_pages()
-                            last_page_rotation = current_time
+                        if len(self.display_manager.pages) > 0:
+                            self.display_manager.rotate_pages()
+                        else:
+                            # Fallback: show basic temperature bars
+                            self.display_manager.show_temperature_bar(
+                                self.temperature_levels or [0] * 8,
+                                self.rainfall_levels or [0] * 8,
+                                self.current_hour_index,
+                                blink=True
+                            )
                     else:
+                        # Other modes
+                        self.display_manager.show_mode_content(
+                            weather_data=self.observation_data,
+                            temperature_data=self.temperature_levels,
+                            rainfall_data=self.rainfall_levels,
+                            current_col=self.current_hour_index
+                        )
                         time.sleep(1)
                 
                 except KeyboardInterrupt:

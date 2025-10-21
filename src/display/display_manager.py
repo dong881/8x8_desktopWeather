@@ -9,6 +9,9 @@ from datetime import datetime
 from luma.core.render import canvas
 from .icons import WeatherIcons
 from .animations import AnimationEngine
+from ..utils.logger import setup_logger
+
+logger = setup_logger("display_manager")
 
 
 class DisplayPage:
@@ -539,11 +542,12 @@ class DisplayManager:
             mode: Display mode ('carousel', 'icon', 'scrolling', 'mixed', 'alert')
         """
         self.current_mode = mode
+        logger.info(f"Display mode set to: {mode}")
     
     def show_mode_content(self, weather_data: Dict[str, Any] = None, temperature_data: List[int] = None, 
                          rainfall_data: List[int] = None, current_col: int = 0):
         """
-        Show content based on current display mode (all animations enabled by default)
+        Show content based on current display mode
         
         Args:
             weather_data: Current weather observation data
@@ -555,10 +559,8 @@ class DisplayManager:
             if weather_data and weather_data.get('weather') != 'N/A':
                 weather_desc = weather_data.get('weather', '')
                 icon_name = self._get_weather_icon_name(weather_desc)
-                # Always animate icons for beautiful display
                 self.show_icon(icon_name, duration=10.0, animate=True)
             else:
-                # Default sunny icon if no weather data with animation
                 self.show_icon('sunny', duration=10.0, animate=True)
         
         elif self.current_mode == self.MODE_SCROLLING:
@@ -575,14 +577,11 @@ class DisplayManager:
                 weather_desc = weather_data.get('weather', '')
                 icon_name = self._get_weather_icon_name(weather_desc)
                 temp = weather_data.get('temperature', 0)
-                # Show icon with animation, then temperature
                 self.show_icon(icon_name, duration=5.0, animate=True)
             else:
-                # Fallback to sunny animation
                 self.show_icon('sunny', duration=5.0, animate=True)
         
         elif self.current_mode == self.MODE_ALERT:
-            # Show alert mode - blinking warning with animation
             self.animator.blink(WeatherIcons.WARNING, duration=3.0, blink_rate=0.3)
             if weather_data:
                 temp = weather_data.get('temperature', 0)
@@ -596,7 +595,6 @@ class DisplayManager:
             if temperature_data and rainfall_data:
                 self.show_temperature_bar(temperature_data, rainfall_data, current_col, blink=True)
             else:
-                # Fallback to animated sunny icon
                 self.show_icon('sunny', duration=5.0, animate=True)
     
     def _get_weather_icon_name(self, weather_desc: str) -> str:
