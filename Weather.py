@@ -692,7 +692,7 @@ def draw_rainy_animation(draw, frame):
         draw.point((7, 6), fill="white")
 
 def draw_thunderstorm_animation(draw, frame):
-    """Draw super vivid thunderstorm animation - instantly recognizable as severe weather"""
+    """Draw super vivid thunderstorm animation - instantly recognizable as severe weather with dramatic effects"""
     # Massive angry storm cloud
     # Top layer
     draw.point((0, 0), fill="white")
@@ -720,11 +720,19 @@ def draw_thunderstorm_animation(draw, frame):
     draw.point((5, 2), fill="white")
     draw.point((6, 2), fill="white")
     
-    # Very angry cloud face
+    # Very angry cloud face with animated eyebrows
     draw.point((2, 0), fill="black")  # angry left eye
     draw.point((5, 0), fill="black")  # angry right eye
     draw.point((2, 1), fill="black")  # angry left eye
     draw.point((5, 1), fill="black")  # angry right eye
+    # Angry eyebrows that move
+    angry_frame = frame % 4
+    if angry_frame < 2:
+        draw.point((1, 0), fill="black")  # angry eyebrow left
+        draw.point((6, 0), fill="black")  # angry eyebrow right
+    else:
+        draw.point((0, 0), fill="black")  # angry eyebrow left
+        draw.point((7, 0), fill="black")  # angry eyebrow right
     # Angry frowning mouth
     draw.point((1, 2), fill="black")  # angry mouth left
     draw.point((6, 2), fill="black")  # angry mouth right
@@ -734,7 +742,7 @@ def draw_thunderstorm_animation(draw, frame):
     draw.point((5, 2), fill="black")  # angry mouth center
     
     # DRAMATIC lightning with multiple bolts and flashing effect
-    lightning_frame = frame % 6
+    lightning_frame = frame % 8
     if lightning_frame == 0 or lightning_frame == 1:
         # Main lightning bolt - very bright and jagged
         draw.point((3, 2), fill="white")
@@ -750,6 +758,11 @@ def draw_thunderstorm_animation(draw, frame):
         draw.point((6, 5), fill="white")
         draw.point((5, 6), fill="white")
         draw.point((4, 7), fill="white")
+        # Extra bright flash
+        draw.point((3, 3), fill="white")
+        draw.point((4, 3), fill="white")
+        draw.point((3, 4), fill="white")
+        draw.point((4, 4), fill="white")
     elif lightning_frame == 2 or lightning_frame == 3:
         # Different lightning pattern
         draw.point((4, 2), fill="white")
@@ -765,7 +778,7 @@ def draw_thunderstorm_animation(draw, frame):
         draw.point((2, 5), fill="white")
         draw.point((1, 6), fill="white")
         draw.point((0, 7), fill="white")
-    else:
+    elif lightning_frame == 4 or lightning_frame == 5:
         # Multiple lightning bolts across the screen
         draw.point((2, 2), fill="white")
         draw.point((3, 3), fill="white")
@@ -787,22 +800,43 @@ def draw_thunderstorm_animation(draw, frame):
         draw.point((4, 5), fill="white")
         draw.point((4, 6), fill="white")
         draw.point((4, 7), fill="white")
+    else:
+        # Intense flash - all lightning at once
+        for x in [1, 2, 3, 4, 5, 6]:
+            for y in [2, 3, 4, 5, 6, 7]:
+                if (x + y) % 2 == 0:
+                    draw.point((x, y), fill="white")
     
-    # Heavy rain during thunderstorm
+    # Heavy rain during thunderstorm with wind effect
     rain_speed = (frame % 2)
+    wind_offset = (frame % 3) - 1  # Wind effect
     for x in [0, 2, 4, 6]:
         y = 3 + rain_speed
         if y < 8:
-            draw.point((x, y), fill="white")
+            draw.point((x + wind_offset, y), fill="white")
             if y < 7:
-                draw.point((x, y+1), fill="white")
+                draw.point((x + wind_offset, y+1), fill="white")
     
     for x in [1, 3, 5, 7]:
         y = 4 + rain_speed
         if y < 8:
-            draw.point((x, y), fill="white")
+            draw.point((x + wind_offset, y), fill="white")
             if y < 7:
-                draw.point((x, y+1), fill="white")
+                draw.point((x + wind_offset, y+1), fill="white")
+    
+    # Dramatic splash effects
+    splash_frame = frame % 2
+    if splash_frame == 0:
+        for x in [0, 1, 2, 3, 4, 5, 6, 7]:
+            draw.point((x, 7), fill="white")
+        # Extra splash particles
+        for x in [0, 2, 4, 6]:
+            draw.point((x, 6), fill="white")
+    else:
+        for x in [0, 2, 4, 6]:
+            draw.point((x, 7), fill="white")
+        for x in [1, 3, 5, 7]:
+            draw.point((x, 6), fill="white")
 
 def draw_snowy_animation(draw, frame):
     """Draw cute snowy weather animation - big snowman with falling snow"""
