@@ -18,13 +18,23 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 MODE_ANIMATION = 0
 MODE_TICKER = 1
 MODE_BARGRAPH = 2
-CAROUSEL_DURATION = 10  # seconds per mode
+CAROUSEL_DURATION = 15  # seconds per mode (increased for better viewing)
+TICKER_FULL_CYCLE = 80  # frames for complete ticker scroll
 
 Authorization = ''
 # Access the Authorization value from the configuration
 Authorization = WeatherAPI['Authorization']
 if Authorization == '':
-    print("You need to confirm whether the config.py in the same folder exists and whether you have entered the correct Authorization")
+    print("=" * 60)
+    print("🌤️  Smart Weather Display Setup Required")
+    print("=" * 60)
+    print("Please configure your CWA authorization token:")
+    print("1. Visit: https://opendata.cwa.gov.tw/user/authkey")
+    print("2. Get your authorization token")
+    print("3. Edit config.py and add your token:")
+    print("   WeatherAPI = {'Authorization': 'YOUR_TOKEN_HERE'}")
+    print("=" * 60)
+    print("If you have already configured the token, please check config.py")
     exit()
 
 # 定義函式，從交通部氣象局網站獲取當天天氣預報
@@ -96,11 +106,26 @@ device = max7219(serial, cascaded=1, block_orientation=0, rotate=0)
 
 
 def START_LOGO():
-    with canvas(device) as draw:
-        draw.rectangle(device.bounding_box, outline="white", fill="black")
-        draw.ellipse([(0, 0), (7, 7)], outline="white", fill="black")
-        draw.ellipse([(2, 2), (5, 5)], outline="white", fill="black")
-    time.sleep(0.5)
+    """Cute startup animation with weather icons"""
+    # Show different weather icons in sequence
+    weather_icons = [
+        # Sunny
+        lambda draw: draw_sunny_animation(draw, 0),
+        # Cloudy  
+        lambda draw: draw_cloudy_animation(draw, 0),
+        # Rainy
+        lambda draw: draw_rainy_animation(draw, 0),
+        # Snowy
+        lambda draw: draw_snowy_animation(draw, 0)
+    ]
+    
+    for i, icon_func in enumerate(weather_icons):
+        with canvas(device) as draw:
+            draw.rectangle(device.bounding_box, outline="white", fill="black")
+            icon_func(draw)
+        time.sleep(0.8)
+    
+    # Fade out effect
     for intensity in list(range(15,0,-1)):
         device.contrast(intensity * 16)
         time.sleep(0.05)
@@ -156,71 +181,193 @@ def get_brightness_for_time(hour):
         return 30  # Normal brightness
 
 def draw_sunny_animation(draw, frame):
-    """Draw sunny weather animation - sun with rays"""
-    # Sun center
+    """Draw cute sunny weather animation - smiling sun with animated rays"""
+    # Smiling sun center with face
     draw.ellipse([(2, 2), (5, 5)], outline="white", fill="white")
-    # Animated rays
-    if frame % 2 == 0:
+    # Eyes
+    draw.point((3, 3), fill="black")
+    draw.point((4, 3), fill="black")
+    # Smile
+    draw.point((2, 4), fill="black")
+    draw.point((5, 4), fill="black")
+    draw.point((3, 5), fill="black")
+    draw.point((4, 5), fill="black")
+    
+    # Animated rays with different lengths for cuteness
+    ray_frame = frame % 4
+    if ray_frame == 0:
+        # Long rays
         draw.point((1, 1), fill="white")
         draw.point((6, 1), fill="white")
         draw.point((1, 6), fill="white")
         draw.point((6, 6), fill="white")
-    draw.point((3, 0), fill="white")
-    draw.point((4, 0), fill="white")
-    draw.point((3, 7), fill="white")
-    draw.point((4, 7), fill="white")
-    draw.point((0, 3), fill="white")
-    draw.point((0, 4), fill="white")
-    draw.point((7, 3), fill="white")
-    draw.point((7, 4), fill="white")
+        draw.point((3, 0), fill="white")
+        draw.point((4, 0), fill="white")
+        draw.point((3, 7), fill="white")
+        draw.point((4, 7), fill="white")
+        draw.point((0, 3), fill="white")
+        draw.point((0, 4), fill="white")
+        draw.point((7, 3), fill="white")
+        draw.point((7, 4), fill="white")
+    elif ray_frame == 1:
+        # Medium rays
+        draw.point((2, 1), fill="white")
+        draw.point((5, 1), fill="white")
+        draw.point((2, 6), fill="white")
+        draw.point((5, 6), fill="white")
+        draw.point((3, 0), fill="white")
+        draw.point((4, 0), fill="white")
+        draw.point((3, 7), fill="white")
+        draw.point((4, 7), fill="white")
+        draw.point((1, 3), fill="white")
+        draw.point((1, 4), fill="white")
+        draw.point((6, 3), fill="white")
+        draw.point((6, 4), fill="white")
+    else:
+        # Short rays
+        draw.point((3, 1), fill="white")
+        draw.point((4, 1), fill="white")
+        draw.point((3, 6), fill="white")
+        draw.point((4, 6), fill="white")
+        draw.point((2, 2), fill="white")
+        draw.point((5, 2), fill="white")
+        draw.point((2, 5), fill="white")
+        draw.point((5, 5), fill="white")
 
 def draw_cloudy_animation(draw, frame):
-    """Draw cloudy weather animation - moving clouds"""
-    offset = frame % 2
-    # Cloud 1
+    """Draw cute cloudy weather animation - fluffy moving clouds with faces"""
+    offset = frame % 3
+    # Cloud 1 with face
     draw.point((1+offset, 2), fill="white")
     draw.point((2+offset, 1), fill="white")
     draw.point((3+offset, 1), fill="white")
     draw.point((4+offset, 2), fill="white")
-    # Cloud 2
+    draw.point((2+offset, 2), fill="white")
+    draw.point((3+offset, 2), fill="white")
+    
+    # Cloud 1 face
+    if offset == 0:
+        draw.point((2, 1), fill="black")  # eye
+        draw.point((3, 1), fill="black")  # eye
+        draw.point((2, 2), fill="black")  # mouth
+    elif offset == 1:
+        draw.point((3, 1), fill="black")  # eye
+        draw.point((4, 1), fill="black")  # eye
+        draw.point((3, 2), fill="black")  # mouth
+    
+    # Cloud 2 with face
     draw.point((2, 5), fill="white")
     draw.point((3, 4), fill="white")
     draw.point((4, 4), fill="white")
     draw.point((5, 5), fill="white")
+    draw.point((3, 5), fill="white")
+    draw.point((4, 5), fill="white")
+    
+    # Cloud 2 face
+    draw.point((3, 4), fill="black")  # eye
+    draw.point((4, 4), fill="black")  # eye
+    draw.point((3, 5), fill="black")  # mouth
 
 def draw_rainy_animation(draw, frame):
-    """Draw rainy weather animation - cloud with falling rain"""
-    # Cloud
+    """Draw cute rainy weather animation - sad cloud with falling rain"""
+    # Sad cloud with face
     draw.point((2, 1), fill="white")
     draw.point((3, 0), fill="white")
     draw.point((4, 0), fill="white")
     draw.point((5, 1), fill="white")
-    # Falling rain drops (animated)
-    rain_y = (frame % 4)
-    for x in [1, 3, 5]:
-        y = 3 + rain_y
+    draw.point((3, 1), fill="white")
+    draw.point((4, 1), fill="white")
+    
+    # Sad cloud face
+    draw.point((3, 0), fill="black")  # eye
+    draw.point((4, 0), fill="black")  # eye
+    draw.point((2, 1), fill="black")  # sad mouth
+    draw.point((5, 1), fill="black")  # sad mouth
+    
+    # Falling rain drops with different speeds for cuteness
+    rain_y1 = (frame % 3)
+    rain_y2 = (frame % 4)
+    rain_y3 = (frame % 5)
+    
+    # Rain drops with varying speeds
+    for x in [1, 4]:
+        y = 3 + rain_y1
         if y < 8:
             draw.point((x, y), fill="white")
-    for x in [2, 4, 6]:
-        y = 4 + rain_y
+    for x in [2, 5]:
+        y = 4 + rain_y2
+        if y < 8:
+            draw.point((x, y), fill="white")
+    for x in [3, 6]:
+        y = 5 + rain_y3
         if y < 8:
             draw.point((x, y), fill="white")
 
 def draw_thunderstorm_animation(draw, frame):
-    """Draw thunderstorm animation - cloud with lightning"""
-    # Cloud
+    """Draw cute thunderstorm animation - angry cloud with lightning"""
+    # Angry cloud with face
     draw.point((2, 0), fill="white")
     draw.point((3, 0), fill="white")
     draw.point((4, 0), fill="white")
     draw.point((1, 1), fill="white")
     draw.point((5, 1), fill="white")
-    # Lightning (flashing)
-    if frame % 3 == 0:
+    draw.point((2, 1), fill="white")
+    draw.point((3, 1), fill="white")
+    draw.point((4, 1), fill="white")
+    
+    # Angry cloud face
+    draw.point((2, 0), fill="black")  # angry eye
+    draw.point((4, 0), fill="black")  # angry eye
+    draw.point((1, 1), fill="black")  # angry mouth
+    draw.point((5, 1), fill="black")  # angry mouth
+    draw.point((3, 1), fill="black")  # angry mouth center
+    
+    # Lightning with different patterns for cuteness
+    if frame % 4 == 0:
+        # Zigzag lightning
         draw.point((3, 2), fill="white")
         draw.point((2, 3), fill="white")
         draw.point((3, 4), fill="white")
         draw.point((4, 5), fill="white")
         draw.point((3, 6), fill="white")
+    elif frame % 4 == 1:
+        # Different lightning pattern
+        draw.point((4, 2), fill="white")
+        draw.point((3, 3), fill="white")
+        draw.point((4, 4), fill="white")
+        draw.point((5, 5), fill="white")
+        draw.point((4, 6), fill="white")
+    elif frame % 4 == 2:
+        # Another lightning pattern
+        draw.point((2, 2), fill="white")
+        draw.point((3, 3), fill="white")
+        draw.point((2, 4), fill="white")
+        draw.point((3, 5), fill="white")
+        draw.point((2, 6), fill="white")
+
+def draw_snowy_animation(draw, frame):
+    """Draw cute snowy weather animation - snowman with falling snow"""
+    # Snowman body
+    draw.ellipse([(2, 3), (5, 5)], outline="white", fill="white")  # body
+    draw.ellipse([(3, 1), (4, 3)], outline="white", fill="white")  # head
+    
+    # Snowman face
+    draw.point((3, 2), fill="black")  # eye
+    draw.point((4, 2), fill="black")  # eye
+    draw.point((3, 3), fill="black")  # nose
+    draw.point((2, 4), fill="black")  # mouth
+    draw.point((5, 4), fill="black")  # mouth
+    
+    # Falling snowflakes
+    snow_y = (frame % 6)
+    for x in [0, 2, 4, 6]:
+        y = 1 + snow_y
+        if y < 8:
+            draw.point((x, y), fill="white")
+    for x in [1, 3, 5, 7]:
+        y = 2 + snow_y
+        if y < 8:
+            draw.point((x, y), fill="white")
 
 def draw_weather_animation(temperature_avg, pop_avg, frame):
     """Draw weather animation based on temperature and precipitation"""
@@ -229,7 +376,10 @@ def draw_weather_animation(temperature_avg, pop_avg, frame):
     device.contrast(brightness)
     
     with canvas(device) as draw:
-        if pop_avg >= 60:
+        if temperature_avg <= 15:
+            # Very cold - show snow
+            draw_snowy_animation(draw, frame)
+        elif pop_avg >= 60:
             if pop_avg >= 80:
                 draw_thunderstorm_animation(draw, frame)
             else:
@@ -362,17 +512,27 @@ while 1:
             T_data_raw = []
             PoP_data_raw = []
         
-        # Carousel mode switching
+        # Carousel mode switching with proper timing
         carousel_timer += 1
-        if carousel_timer >= CAROUSEL_DURATION:
-            carousel_timer = 0
-            carousel_mode = (carousel_mode + 1) % 3
-            ticker_scroll = 0  # Reset ticker scroll
-            print(f"Switching to mode: {['ANIMATION', 'TICKER', 'BARGRAPH'][carousel_mode]}")
+        
+        # Special handling for ticker mode - wait for full cycle completion
+        if carousel_mode == MODE_TICKER:
+            if ticker_scroll >= TICKER_FULL_CYCLE and carousel_timer >= CAROUSEL_DURATION:
+                carousel_timer = 0
+                carousel_mode = (carousel_mode + 1) % 3
+                ticker_scroll = 0  # Reset ticker scroll
+                print(f"Ticker completed, switching to mode: {['ANIMATION', 'TICKER', 'BARGRAPH'][carousel_mode]}")
+        else:
+            # Normal timing for other modes
+            if carousel_timer >= CAROUSEL_DURATION:
+                carousel_timer = 0
+                carousel_mode = (carousel_mode + 1) % 3
+                ticker_scroll = 0  # Reset ticker scroll
+                print(f"Switching to mode: {['ANIMATION', 'TICKER', 'BARGRAPH'][carousel_mode]}")
         
         # Display based on current carousel mode
         if carousel_mode == MODE_ANIMATION:
-            # Show cute weather animation
+            # Show cute weather animation with smooth transitions
             animation_frame += 1
             if len(T_format) > 0 and len(PoP_format) > 0:
                 # Calculate average temperature and precipitation
@@ -380,7 +540,7 @@ while 1:
                 pop_values = [p for i, p in enumerate(PoP_format) if i % 2 == 0]
                 pop_avg = sum(pop_values) / len(pop_values) * 60 if pop_values else 0
                 draw_weather_animation(temp_avg, pop_avg, animation_frame)
-            time.sleep(0.2)  # Faster updates for animation
+            time.sleep(0.3)  # Slower, more pleasant animation speed
             
         elif carousel_mode == MODE_TICKER:
             # Show digital ticker with 24-hour forecast
@@ -402,15 +562,15 @@ while 1:
                 
                 display_ticker(T_data_raw, PoP_data_raw, ticker_scroll)
                 ticker_scroll += 1
-                if ticker_scroll > 60:  # Reset scroll after full cycle
-                    ticker_scroll = 0
+                if ticker_scroll > TICKER_FULL_CYCLE:  # Reset scroll after full cycle
+                    ticker_scroll = TICKER_FULL_CYCLE  # Keep at max to signal completion
                     
             except Exception as e:
                 print(f"Ticker error: {e}")
                 # Fallback to animation if ticker fails
                 carousel_mode = MODE_ANIMATION
                 
-            time.sleep(0.15)  # Smooth scrolling
+            time.sleep(0.2)  # Smoother scrolling for better readability
             
         elif carousel_mode == MODE_BARGRAPH:
             # Show original bar graph

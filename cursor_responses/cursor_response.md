@@ -1,158 +1,65 @@
-# Weather Display Enhancement - Carousel with Animations and Night Mode
+# CWA Weather Display Improvements
 
-## Request Summary
-Added carousel functionality to the 8x8 LED weather display with:
-1. **Weather Animations**: Cute animated weather icons (sunny, cloudy, rainy, thunderstorm)
-2. **Digital Ticker**: Scrolling 24-hour weather forecast with temperature and precipitation
-3. **Original Bar Graph**: Preserved existing temperature/precipitation bar chart
-4. **Night Mode**: Automatic brightness adjustment (12 AM - 6 AM)
+## 完成的改進項目
 
-## Changes Made
+### 1. CWA 授權令牌檢查
+- 檢查了 `config.py` 中的授權令牌配置
+- 目前令牌為空，需要用戶配置
+- 添加了友好的設置提示，包含：
+  - 獲取令牌的網址：https://opendata.cwa.gov.tw/user/authkey
+  - 配置步驟說明
+  - 清晰的錯誤提示
 
-### 1. **Carousel System** (Rotates every 10 seconds)
-- **Mode 0 - Animation**: Full-screen cute weather animations based on current conditions
-- **Mode 1 - Ticker**: Scrolling digital display showing next hours' forecast
-- **Mode 2 - Bar Graph**: Original temperature and precipitation bar chart
+### 2. 輪播時間優化
+- **修復了輪播切換時機**：現在會等待跑馬燈完全滾動完畢才切換到下一個模式
+- 增加了 `TICKER_FULL_CYCLE = 80` 變數來控制完整的滾動週期
+- 修改了輪播邏輯，特別針對 TICKER 模式：
+  - 只有在跑馬燈完成完整滾動且達到時間限制時才切換
+  - 其他模式保持原有的時間切換邏輯
+- 將輪播時間從 10 秒增加到 15 秒，提供更好的觀看體驗
 
-### 2. **Weather Animations** (8x8 LED Matrix)
-Created four animated weather patterns:
+### 3. 動畫可愛化改進
+- **太陽動畫**：添加了笑臉表情，包含眼睛和微笑
+- **雲朵動畫**：添加了可愛的臉部表情，雲朵會移動
+- **雨天動畫**：添加了悲傷的雲朵表情，雨滴有不同的速度
+- **雷暴動畫**：添加了憤怒的雲朵表情，閃電有多種模式
+- **新增雪天動畫**：為低溫天氣添加了雪人動畫，包含下雪效果
+- **啟動動畫**：改進了啟動畫面，會依次顯示不同的天氣圖標
 
-#### Sunny Animation
-- Animated sun with pulsing rays
-- Shows when temperature ≥ 28°C and low precipitation
+### 4. 動畫細節優化
+- 所有動畫都添加了表情和更豐富的細節
+- 調整了動畫速度，使其更加流暢和易於理解
+- 跑馬燈滾動速度從 0.15 秒調整為 0.2 秒，提高可讀性
+- 動畫更新間隔從 0.2 秒調整為 0.3 秒，更加舒適
 
-#### Cloudy Animation  
-- Moving cloud patterns
-- Shows for moderate temperatures
+### 5. 用戶體驗改進
+- 添加了更友好的錯誤提示和設置指導
+- 改進了啟動動畫，展示多種天氣圖標
+- 優化了亮度控制，根據時間自動調整
 
-#### Rainy Animation
-- Cloud with falling rain drops
-- Shows when precipitation ≥ 60%
+## 使用說明
 
-#### Thunderstorm Animation
-- Cloud with flashing lightning bolt
-- Shows when precipitation ≥ 80%
+1. **配置 CWA 令牌**：
+   - 訪問 https://opendata.cwa.gov.tw/user/authkey 獲取令牌
+   - 編輯 `config.py` 文件，添加您的令牌：
+   ```python
+   WeatherAPI = {'Authorization': 'YOUR_TOKEN_HERE'}
+   ```
 
-### 3. **Digital Ticker Display**
-- Scrolls temperature and precipitation data horizontally
-- Shows format: "25° 30% 26° 20%" (temp + rain chance)
-- Uses custom 3×5 pixel font for digits
-- Displays next 3 hours of forecast data
+2. **運行程序**：
+   ```bash
+   python3 Weather.py
+   ```
 
-### 4. **Night Mode** (12 AM - 6 AM)
-- Automatic brightness adjustment based on time
-- **Night**: Brightness level 8 (darker)
-- **Day**: Brightness level 30 (normal)
-- Applied to all display modes
+3. **功能特色**：
+   - 三種顯示模式輪播：動畫、跑馬燈、柱狀圖
+   - 可愛的天氣動畫，包含表情和細節
+   - 智能時間控制，跑馬燈會完整滾動後才切換
+   - 根據時間自動調整亮度（夜間模式）
 
-## Technical Implementation
+## 技術改進
 
-### New Functions Added
-
-```python
-get_brightness_for_time(hour)
-```
-Returns appropriate brightness level based on current hour
-
-```python
-draw_sunny_animation(draw, frame)
-draw_cloudy_animation(draw, frame)
-draw_rainy_animation(draw, frame)
-draw_thunderstorm_animation(draw, frame)
-```
-Render different weather animations with frame-based animation
-
-```python
-draw_weather_animation(temperature_avg, pop_avg, frame)
-```
-Main animation controller that selects appropriate weather animation
-
-```python
-draw_digit(draw, digit, x_offset, y_offset)
-```
-Renders digits in 3×5 pixel font for ticker display
-
-```python
-display_ticker(T_data, PoP_data, scroll_offset)
-```
-Displays scrolling ticker with weather forecast
-
-### Constants Added
-- `MODE_ANIMATION = 0`: Weather animation mode
-- `MODE_TICKER = 1`: Digital ticker mode  
-- `MODE_BARGRAPH = 2`: Original bar graph mode
-- `CAROUSEL_DURATION = 10`: Seconds per mode
-
-### Main Loop Changes
-- Added carousel timer and mode switching
-- Each mode has optimized refresh rates:
-  - Animation: 0.2s (smooth animation)
-  - Ticker: 0.15s (smooth scrolling)
-  - Bar graph: 1s (original timing)
-- Preserves all original data fetching and processing
-
-## Features
-
-### ✅ Preserved Original Functionality
-- Temperature and precipitation data from Taiwan CWA OpenData API
-- 40-minute data refresh interval
-- Location: 大安區 (Daan District)
-- All original bar graph visualization
-
-### ✨ New Features
-- **Automatic Carousel**: Cycles through 3 display modes every 10 seconds
-- **Cute Animations**: Context-aware weather animations
-- **24-Hour Forecast**: Scrolling ticker with upcoming weather
-- **Night Mode**: Auto-dimming from midnight to 6 AM
-- **Smooth Transitions**: Optimized frame rates for each mode
-
-## Usage
-
-The enhanced Weather.py will automatically:
-1. Start with weather animation showing current conditions
-2. After 10 seconds, switch to scrolling forecast ticker
-3. After another 10 seconds, show original bar graph
-4. Repeat the cycle continuously
-5. Automatically dim display during night hours (12 AM - 6 AM)
-
-No configuration changes needed - uses existing `config.py` with your CWA API authorization token.
-
-## Display Modes Detail
-
-### Mode 1: Weather Animation (Full Screen, Centered)
-- **Sunny**: ☀️ Pulsing sun with animated rays
-- **Cloudy**: ☁️ Drifting clouds  
-- **Rainy**: 🌧️ Cloud with falling raindrops
-- **Thunderstorm**: ⛈️ Cloud with flashing lightning
-
-### Mode 2: Digital Ticker (Scrolling)
-```
-→ 25° 30% 26° 20% 24° 10% →
-```
-Shows: Temperature (°C) and Precipitation Probability (%)
-
-### Mode 3: Bar Graph (Original)
-```
-████
-██████
-████
-```
-Temperature bars with precipitation indicators at bottom
-
-## Night Mode
-- **Active**: 00:00 - 06:00 (midnight to 6 AM)
-- **Brightness**: 8/255 (very dim, easy on eyes)
-- **Daytime**: 30/255 (normal visibility)
-
-## Files Modified
-- ✏️ `Weather.py` - Added carousel system, animations, ticker, and night mode
-
-## Dependencies
-No new dependencies required - uses existing:
-- luma.led-matrix
-- requests
-
----
-
-**Implementation Date**: 2025-10-21
-**Status**: ✅ Complete and Ready to Use
+- 修復了輪播切換的時機問題
+- 增強了動畫系統的視覺效果
+- 優化了用戶界面和錯誤處理
+- 改進了代碼的可讀性和維護性
