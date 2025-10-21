@@ -21,10 +21,9 @@ MODE_BARGRAPH = 2
 CAROUSEL_DURATION = 15  # seconds per mode (increased for better viewing)
 TICKER_FULL_CYCLE = 80  # frames for complete ticker scroll
 
-Authorization = ''
 # Access the Authorization value from the configuration
-Authorization = WeatherAPI['Authorization']
-if Authorization == '':
+Authorization = WeatherAPI['Authorization'].strip()  # Remove any whitespace
+if not Authorization or Authorization == '':
     print("=" * 60)
     print("🌤️  Smart Weather Display Setup Required")
     print("=" * 60)
@@ -188,67 +187,127 @@ def get_brightness_for_time(hour):
         return 30  # Normal brightness
 
 def draw_happy_smiley(draw, frame):
-    """Draw a happy smiley face"""
-    # Face outline
-    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
-    # Eyes
+    """Draw a super cute happy smiley face"""
+    # Bigger, rounder face outline with more personality
+    draw.ellipse([(0, 0), (7, 7)], outline="white", fill="white")
+    # Bigger, more expressive eyes with sparkle
+    draw.point((2, 1), fill="black")
+    draw.point((5, 1), fill="black")
     draw.point((2, 2), fill="black")
     draw.point((5, 2), fill="black")
-    # Happy mouth
-    draw.point((2, 4), fill="black")
-    draw.point((3, 5), fill="black")
-    draw.point((4, 5), fill="black")
-    draw.point((5, 4), fill="black")
-
-def draw_winking_smiley(draw, frame):
-    """Draw a winking smiley face"""
-    # Face outline
-    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
-    # Left eye (open)
-    draw.point((2, 2), fill="black")
-    # Right eye (winking - closed)
-    draw.point((5, 2), fill="white")
-    draw.point((5, 3), fill="black")
-    # Happy mouth
-    draw.point((2, 4), fill="black")
-    draw.point((3, 5), fill="black")
-    draw.point((4, 5), fill="black")
-    draw.point((5, 4), fill="black")
-
-def draw_big_smile_smiley(draw, frame):
-    """Draw a big smile smiley face"""
-    # Face outline
-    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
-    # Eyes
-    draw.point((2, 2), fill="black")
-    draw.point((5, 2), fill="black")
-    # Big smile
+    # Eye sparkles for extra cuteness
+    draw.point((1, 0), fill="white")
+    draw.point((6, 0), fill="white")
+    # Bigger, more cheerful smile
     draw.point((1, 4), fill="black")
     draw.point((2, 5), fill="black")
     draw.point((3, 6), fill="black")
     draw.point((4, 6), fill="black")
     draw.point((5, 5), fill="black")
     draw.point((6, 4), fill="black")
+    # Cheek dimples for extra cuteness
+    draw.point((0, 3), fill="white")
+    draw.point((7, 3), fill="white")
+
+def draw_winking_smiley(draw, frame):
+    """Draw a super cute winking smiley face"""
+    # Bigger, rounder face outline
+    draw.ellipse([(0, 0), (7, 7)], outline="white", fill="white")
+    # Left eye (big and open with sparkle)
+    draw.point((2, 1), fill="black")
+    draw.point((2, 2), fill="black")
+    draw.point((1, 0), fill="white")  # sparkle
+    # Right eye (cute winking - closed with eyelash)
+    draw.point((5, 1), fill="white")
+    draw.point((5, 2), fill="black")  # eyelash
+    draw.point((4, 2), fill="black")  # eyelash
+    draw.point((6, 2), fill="black")  # eyelash
+    # Playful mouth
+    draw.point((1, 4), fill="black")
+    draw.point((2, 5), fill="black")
+    draw.point((3, 6), fill="black")
+    draw.point((4, 6), fill="black")
+    draw.point((5, 5), fill="black")
+    draw.point((6, 4), fill="black")
+    # Cheek dimples
+    draw.point((0, 3), fill="white")
+    draw.point((7, 3), fill="white")
+
+def draw_big_smile_smiley(draw, frame):
+    """Draw a super cute big smile smiley face"""
+    # Bigger, rounder face outline
+    draw.ellipse([(0, 0), (7, 7)], outline="white", fill="white")
+    # Bigger, more excited eyes
+    draw.point((2, 1), fill="black")
+    draw.point((5, 1), fill="black")
+    draw.point((2, 2), fill="black")
+    draw.point((5, 2), fill="black")
+    # Eye sparkles for excitement
+    draw.point((1, 0), fill="white")
+    draw.point((6, 0), fill="white")
+    draw.point((0, 1), fill="white")
+    draw.point((7, 1), fill="white")
+    # HUGE happy smile with teeth
+    draw.point((0, 4), fill="black")
+    draw.point((1, 5), fill="black")
+    draw.point((2, 6), fill="black")
+    draw.point((3, 7), fill="black")
+    draw.point((4, 7), fill="black")
+    draw.point((5, 6), fill="black")
+    draw.point((6, 5), fill="black")
+    draw.point((7, 4), fill="black")
+    # Teeth showing
+    draw.point((3, 6), fill="white")
+    draw.point((4, 6), fill="white")
+    # Cheek dimples
+    draw.point((0, 3), fill="white")
+    draw.point((7, 3), fill="white")
 
 def draw_excited_smiley(draw, frame):
-    """Draw an excited smiley face with sparkles"""
-    # Face outline
-    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
-    # Big excited eyes
+    """Draw a super excited smiley face with animated sparkles"""
+    # Bigger, rounder face outline
+    draw.ellipse([(0, 0), (7, 7)], outline="white", fill="white")
+    # HUGE excited eyes with sparkle animation
+    draw.point((2, 1), fill="black")
+    draw.point((5, 1), fill="black")
     draw.point((2, 2), fill="black")
     draw.point((5, 2), fill="black")
     draw.point((2, 3), fill="black")
     draw.point((5, 3), fill="black")
-    # Excited mouth (open)
-    draw.point((3, 4), fill="black")
-    draw.point((4, 4), fill="black")
+    # Animated eye sparkles
+    sparkle_frame = frame % 4
+    if sparkle_frame == 0:
+        draw.point((1, 0), fill="white")
+        draw.point((6, 0), fill="white")
+        draw.point((0, 1), fill="white")
+        draw.point((7, 1), fill="white")
+    elif sparkle_frame == 1:
+        draw.point((0, 0), fill="white")
+        draw.point((7, 0), fill="white")
+        draw.point((1, 1), fill="white")
+        draw.point((6, 1), fill="white")
+    elif sparkle_frame == 2:
+        draw.point((0, 2), fill="white")
+        draw.point((7, 2), fill="white")
+        draw.point((1, 3), fill="white")
+        draw.point((6, 3), fill="white")
+    else:
+        draw.point((1, 2), fill="white")
+        draw.point((6, 2), fill="white")
+        draw.point((0, 3), fill="white")
+        draw.point((7, 3), fill="white")
+    # Excited open mouth with tongue
+    draw.point((2, 4), fill="black")
+    draw.point((5, 4), fill="black")
     draw.point((3, 5), fill="black")
     draw.point((4, 5), fill="black")
-    # Sparkles around the face
-    draw.point((0, 0), fill="white")
-    draw.point((7, 0), fill="white")
-    draw.point((0, 7), fill="white")
-    draw.point((7, 7), fill="white")
+    draw.point((3, 6), fill="black")  # tongue
+    draw.point((4, 6), fill="black")  # tongue
+    # Animated sparkles around the face
+    sparkle_positions = [(0, 0), (7, 0), (0, 7), (7, 7), (0, 3), (7, 3), (3, 0), (4, 0)]
+    for i, (x, y) in enumerate(sparkle_positions):
+        if (frame + i) % 3 == 0:
+            draw.point((x, y), fill="white")
 
 def show_data_update_animation():
     """Show cute smiley animation while updating weather data"""
@@ -430,87 +489,158 @@ def draw_cloudy_animation(draw, frame):
     draw.point((4, 4), fill="black")  # mouth
 
 def draw_rainy_animation(draw, frame):
-    """Draw cute rainy weather animation - big sad cloud with falling rain"""
-    # Bigger sad cloud with face
-    draw.point((1, 1), fill="white")
-    draw.point((2, 0), fill="white")
-    draw.point((3, 0), fill="white")
-    draw.point((4, 0), fill="white")
-    draw.point((5, 1), fill="white")
-    draw.point((6, 1), fill="white")
-    draw.point((2, 1), fill="white")
-    draw.point((3, 1), fill="white")
-    draw.point((4, 1), fill="white")
-    draw.point((5, 1), fill="white")
-    
-    # Sad cloud face
-    draw.point((2, 0), fill="black")  # eye
-    draw.point((4, 0), fill="black")  # eye
-    draw.point((1, 1), fill="black")  # sad mouth
-    draw.point((6, 1), fill="black")  # sad mouth
-    draw.point((3, 1), fill="black")  # sad mouth center
-    draw.point((4, 1), fill="black")  # sad mouth center
-    
-    # More prominent falling rain drops with different speeds for cuteness
-    rain_y1 = (frame % 3)
-    rain_y2 = (frame % 4)
-    rain_y3 = (frame % 5)
-    rain_y4 = (frame % 6)
-    
-    # More rain drops with varying speeds
-    for x in [0, 3, 6]:
-        y = 2 + rain_y1
-        if y < 8:
-            draw.point((x, y), fill="white")
-    for x in [1, 4, 7]:
-        y = 3 + rain_y2
-        if y < 8:
-            draw.point((x, y), fill="white")
-    for x in [2, 5]:
-        y = 4 + rain_y3
-        if y < 8:
-            draw.point((x, y), fill="white")
-    for x in [1, 3, 5]:
-        y = 5 + rain_y4
-        if y < 8:
-            draw.point((x, y), fill="white")
-
-def draw_thunderstorm_animation(draw, frame):
-    """Draw cute thunderstorm animation - big angry cloud with lightning"""
-    # Bigger angry cloud with face
+    """Draw super vivid rainy weather animation - instantly recognizable as rain forecast"""
+    # Bigger, more prominent rain cloud with sad face
+    # Cloud top layer
+    draw.point((0, 0), fill="white")
     draw.point((1, 0), fill="white")
     draw.point((2, 0), fill="white")
     draw.point((3, 0), fill="white")
     draw.point((4, 0), fill="white")
     draw.point((5, 0), fill="white")
     draw.point((6, 0), fill="white")
+    draw.point((7, 0), fill="white")
+    # Cloud middle layer
     draw.point((0, 1), fill="white")
-    draw.point((7, 1), fill="white")
     draw.point((1, 1), fill="white")
     draw.point((2, 1), fill="white")
     draw.point((3, 1), fill="white")
     draw.point((4, 1), fill="white")
     draw.point((5, 1), fill="white")
     draw.point((6, 1), fill="white")
+    draw.point((7, 1), fill="white")
+    # Cloud bottom layer
+    draw.point((1, 2), fill="white")
+    draw.point((2, 2), fill="white")
+    draw.point((3, 2), fill="white")
+    draw.point((4, 2), fill="white")
+    draw.point((5, 2), fill="white")
+    draw.point((6, 2), fill="white")
     
-    # Angry cloud face
-    draw.point((2, 0), fill="black")  # angry eye
-    draw.point((5, 0), fill="black")  # angry eye
-    draw.point((1, 1), fill="black")  # angry mouth
-    draw.point((6, 1), fill="black")  # angry mouth
-    draw.point((3, 1), fill="black")  # angry mouth center
-    draw.point((4, 1), fill="black")  # angry mouth center
+    # Sad cloud face - more expressive
+    draw.point((2, 0), fill="black")  # left eye
+    draw.point((5, 0), fill="black")  # right eye
+    draw.point((2, 1), fill="black")  # left eye
+    draw.point((5, 1), fill="black")  # right eye
+    # Sad frowning mouth
+    draw.point((1, 2), fill="black")  # sad mouth left
+    draw.point((6, 2), fill="black")  # sad mouth right
+    draw.point((2, 2), fill="black")  # sad mouth center
+    draw.point((3, 2), fill="black")  # sad mouth center
+    draw.point((4, 2), fill="black")  # sad mouth center
+    draw.point((5, 2), fill="black")  # sad mouth center
     
-    # More prominent lightning with different patterns for cuteness
-    if frame % 4 == 0:
-        # Big zigzag lightning
+    # MUCH more prominent and realistic falling rain with multiple layers
+    # Fast rain drops (heavy rain)
+    rain_speed1 = (frame % 2)  # Very fast
+    rain_speed2 = (frame % 3)  # Medium fast
+    rain_speed3 = (frame % 4)  # Medium
+    rain_speed4 = (frame % 5)  # Slow
+    
+    # Heavy rain drops - multiple columns with different speeds
+    for x in [0, 2, 4, 6]:
+        y = 3 + rain_speed1
+        if y < 8:
+            draw.point((x, y), fill="white")
+            if y < 7:  # Make rain drops longer
+                draw.point((x, y+1), fill="white")
+    
+    for x in [1, 3, 5, 7]:
+        y = 4 + rain_speed2
+        if y < 8:
+            draw.point((x, y), fill="white")
+            if y < 7:
+                draw.point((x, y+1), fill="white")
+    
+    # Additional rain drops for density
+    for x in [0, 1, 6, 7]:
+        y = 5 + rain_speed3
+        if y < 8:
+            draw.point((x, y), fill="white")
+    
+    for x in [2, 3, 4, 5]:
+        y = 6 + rain_speed4
+        if y < 8:
+            draw.point((x, y), fill="white")
+    
+    # Rain splash effects at bottom
+    splash_frame = frame % 3
+    if splash_frame == 0:
+        draw.point((1, 7), fill="white")
+        draw.point((3, 7), fill="white")
+        draw.point((5, 7), fill="white")
+        draw.point((7, 7), fill="white")
+    elif splash_frame == 1:
+        draw.point((0, 7), fill="white")
+        draw.point((2, 7), fill="white")
+        draw.point((4, 7), fill="white")
+        draw.point((6, 7), fill="white")
+    else:
+        draw.point((1, 7), fill="white")
+        draw.point((2, 7), fill="white")
+        draw.point((5, 7), fill="white")
+        draw.point((6, 7), fill="white")
+
+def draw_thunderstorm_animation(draw, frame):
+    """Draw super vivid thunderstorm animation - instantly recognizable as severe weather"""
+    # Massive angry storm cloud
+    # Top layer
+    draw.point((0, 0), fill="white")
+    draw.point((1, 0), fill="white")
+    draw.point((2, 0), fill="white")
+    draw.point((3, 0), fill="white")
+    draw.point((4, 0), fill="white")
+    draw.point((5, 0), fill="white")
+    draw.point((6, 0), fill="white")
+    draw.point((7, 0), fill="white")
+    # Middle layer
+    draw.point((0, 1), fill="white")
+    draw.point((1, 1), fill="white")
+    draw.point((2, 1), fill="white")
+    draw.point((3, 1), fill="white")
+    draw.point((4, 1), fill="white")
+    draw.point((5, 1), fill="white")
+    draw.point((6, 1), fill="white")
+    draw.point((7, 1), fill="white")
+    # Bottom layer
+    draw.point((1, 2), fill="white")
+    draw.point((2, 2), fill="white")
+    draw.point((3, 2), fill="white")
+    draw.point((4, 2), fill="white")
+    draw.point((5, 2), fill="white")
+    draw.point((6, 2), fill="white")
+    
+    # Very angry cloud face
+    draw.point((2, 0), fill="black")  # angry left eye
+    draw.point((5, 0), fill="black")  # angry right eye
+    draw.point((2, 1), fill="black")  # angry left eye
+    draw.point((5, 1), fill="black")  # angry right eye
+    # Angry frowning mouth
+    draw.point((1, 2), fill="black")  # angry mouth left
+    draw.point((6, 2), fill="black")  # angry mouth right
+    draw.point((2, 2), fill="black")  # angry mouth center
+    draw.point((3, 2), fill="black")  # angry mouth center
+    draw.point((4, 2), fill="black")  # angry mouth center
+    draw.point((5, 2), fill="black")  # angry mouth center
+    
+    # DRAMATIC lightning with multiple bolts and flashing effect
+    lightning_frame = frame % 6
+    if lightning_frame == 0 or lightning_frame == 1:
+        # Main lightning bolt - very bright and jagged
         draw.point((3, 2), fill="white")
         draw.point((2, 3), fill="white")
         draw.point((3, 4), fill="white")
         draw.point((4, 5), fill="white")
         draw.point((3, 6), fill="white")
         draw.point((2, 7), fill="white")
-    elif frame % 4 == 1:
+        # Secondary lightning
+        draw.point((5, 2), fill="white")
+        draw.point((4, 3), fill="white")
+        draw.point((5, 4), fill="white")
+        draw.point((6, 5), fill="white")
+        draw.point((5, 6), fill="white")
+        draw.point((4, 7), fill="white")
+    elif lightning_frame == 2 or lightning_frame == 3:
         # Different lightning pattern
         draw.point((4, 2), fill="white")
         draw.point((3, 3), fill="white")
@@ -518,22 +648,51 @@ def draw_thunderstorm_animation(draw, frame):
         draw.point((5, 5), fill="white")
         draw.point((4, 6), fill="white")
         draw.point((3, 7), fill="white")
-    elif frame % 4 == 2:
-        # Another lightning pattern
+        # Forked lightning
+        draw.point((1, 2), fill="white")
+        draw.point((2, 3), fill="white")
+        draw.point((1, 4), fill="white")
+        draw.point((2, 5), fill="white")
+        draw.point((1, 6), fill="white")
+        draw.point((0, 7), fill="white")
+    else:
+        # Multiple lightning bolts across the screen
         draw.point((2, 2), fill="white")
         draw.point((3, 3), fill="white")
         draw.point((2, 4), fill="white")
         draw.point((3, 5), fill="white")
         draw.point((2, 6), fill="white")
         draw.point((1, 7), fill="white")
-    else:
-        # Multiple lightning bolts
-        draw.point((2, 2), fill="white")
-        draw.point((3, 3), fill="white")
-        draw.point((2, 4), fill="white")
+        # Second bolt
+        draw.point((5, 2), fill="white")
+        draw.point((6, 3), fill="white")
+        draw.point((5, 4), fill="white")
+        draw.point((6, 5), fill="white")
+        draw.point((5, 6), fill="white")
+        draw.point((4, 7), fill="white")
+        # Third bolt
         draw.point((4, 2), fill="white")
-        draw.point((5, 3), fill="white")
+        draw.point((4, 3), fill="white")
         draw.point((4, 4), fill="white")
+        draw.point((4, 5), fill="white")
+        draw.point((4, 6), fill="white")
+        draw.point((4, 7), fill="white")
+    
+    # Heavy rain during thunderstorm
+    rain_speed = (frame % 2)
+    for x in [0, 2, 4, 6]:
+        y = 3 + rain_speed
+        if y < 8:
+            draw.point((x, y), fill="white")
+            if y < 7:
+                draw.point((x, y+1), fill="white")
+    
+    for x in [1, 3, 5, 7]:
+        y = 4 + rain_speed
+        if y < 8:
+            draw.point((x, y), fill="white")
+            if y < 7:
+                draw.point((x, y+1), fill="white")
 
 def draw_snowy_animation(draw, frame):
     """Draw cute snowy weather animation - big snowman with falling snow"""
