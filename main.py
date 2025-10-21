@@ -125,60 +125,60 @@ class EnhancedWeatherDisplay:
             logger.warning("Observation data processing returned None or invalid data")
     
     def create_display_pages(self):
-        """Create display pages for content rotation"""
+        """Create display pages for content rotation based on carousel settings"""
+        from web_config import state
         self.display_manager.clear_pages()
         
+        # Get carousel items from settings
+        carousel_items = state.display_settings.get('carousel_items', 
+                                                     ['temperature_bars', 'weather_icon', 'temperature_display'])
+        page_duration = state.display_settings.get('page_duration', 20.0)
+        
         # Page 1: Traditional temperature bar display
-        def show_temp_bars(device):
-            with canvas(device) as draw:
-                for i in range(8):
-                    if i < len(self.temperature_levels):
-                        height = self.temperature_levels[i]
-                        for j in range(height):
-                            draw.point((i, 7 - j - 1), fill="white")
-                        if i < len(self.rainfall_levels) and self.rainfall_levels[i] == 1:
-                            draw.point((i, 7), fill="white")
+        if 'temperature_bars' in carousel_items:
+            def show_temp_bars(device):
+                with canvas(device) as draw:
+                    for i in range(8):
+                        if i < len(self.temperature_levels):
+                            height = self.temperature_levels[i]
+                            for j in range(height):
+                                draw.point((i, 7 - j - 1), fill="white")
+                            if i < len(self.rainfall_levels) and self.rainfall_levels[i] == 1:
+                                draw.point((i, 7), fill="white")
+            
+            self.display_manager.add_page(
+                DisplayPage("temperature_bars", show_temp_bars, duration=page_duration, priority=3)
+            )
         
-        self.display_manager.add_page(
-            DisplayPage("temperature_bars", show_temp_bars, duration=20.0, priority=3)
-        )
-        
-        # Page 2: Weather icon display
-        if self.observation_data and self.observation_data.get('weather') != 'N/A':
+        # Page 2: Weather icon display with animation
+        if 'weather_icon' in carousel_items and self.observation_data and self.observation_data.get('weather') != 'N/A':
             weather_desc = self.observation_data.get('weather', '')
             icon_name = self.processor.get_weather_icon_name(weather_desc)
             
             def show_weather_icon(device):
-                icon = WeatherIcons.get_icon(icon_name)
-                with canvas(device) as draw:
-                    WeatherIcons.draw_icon(draw, 0, 0, icon)
+                # Draw animated weather icon
+                # Note: duration is handled by page duration, so use shorter animation cycle
+                self.display_manager.show_icon(icon_name, duration=5.0, animate=True)
             
             self.display_manager.add_page(
-                DisplayPage("weather_icon", show_weather_icon, duration=16.0, priority=3)
+                DisplayPage("weather_icon", show_weather_icon, duration=page_duration, priority=3)
             )
         
-        # Page 3: Temperature display
-        if self.observation_data and self.observation_data.get('temperature', 0) > 0:
+        # Page 3: Temperature display (full screen, centered)
+        if 'temperature_display' in carousel_items and self.observation_data and self.observation_data.get('temperature', 0) > 0:
             temp = int(self.observation_data.get('temperature', 0))
             
             def show_temperature(device):
                 with canvas(device) as draw:
-                    # Draw thermometer icon on left
-                    icon = WeatherIcons.THERMOMETER_HOT if temp > 28 else WeatherIcons.THERMOMETER_COLD
-                    for row in range(8):
-                        for col in range(3):
-                            if icon[row] & (1 << (7 - col)):
-                                draw.point((col, row), fill="white")
-                    
-                    # Draw temperature digits on right
+                    # Draw large temperature digits centered (2 digits, each 4 pixels wide)
                     temp_str = f"{temp:02d}"
                     if len(temp_str) >= 1:
-                        WeatherIcons.draw_digit(draw, 4, 0, temp_str[0] if len(temp_str) > 1 else '0')
+                        WeatherIcons.draw_digit(draw, 0, 0, temp_str[0] if len(temp_str) > 1 else '0')
                     if len(temp_str) >= 2:
-                        WeatherIcons.draw_digit(draw, 6, 0, temp_str[1])
+                        WeatherIcons.draw_digit(draw, 4, 0, temp_str[1])
             
             self.display_manager.add_page(
-                DisplayPage("temperature_display", show_temperature, duration=16.0, priority=3)
+                DisplayPage("temperature_display", show_temperature, duration=page_duration, priority=3)
             )
     
     def run(self):
