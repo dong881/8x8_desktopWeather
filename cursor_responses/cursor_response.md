@@ -1,117 +1,127 @@
-# 8x8 LED Matrix Weather Display System - UI Revamp & System Optimization
+# LED 長條溫度顯示修復報告
 
-## 完成的工作
+## 問題描述
+LED 長條溫度顯示存在兩個主要問題：
+1. **不會閃爍** - 當前時間欄位應該閃爍以指示當前時間
+2. **不會輪播** - 顯示模式應該在不同頁面之間循環切換
 
-### 1. UI 明亮現代風格改造 ✅
-- **色彩方案更新**: 從暗色主題改為明亮的白色背景設計
-- **現代化配色**: 使用藍色系主色調 (#3b82f6, #8b5cf6) 替代原本的暗色系
-- **視覺層次優化**: 改善卡片設計、按鈕樣式、表單元素的外觀
-- **響應式設計**: 保持在不同螢幕尺寸下的良好顯示效果
-- **陰影效果**: 使用更柔和的陰影效果，提升質感
+## 修復內容
 
-### 2. 8x8 矩陣顯示修復 ✅
-- **數據流修復**: 確保天氣數據正確傳遞到顯示管理器
-- **顯示模式優化**: 修復輪播模式、圖標模式、滾動文字模式
-- **錯誤處理**: 增加對缺失數據的容錯處理
-- **顯示邏輯簡化**: 移除冗餘的顯示邏輯，提高穩定性
+### 1. 修復閃爍功能
+**文件**: `src/display/display_manager.py`
 
-### 3. 系統架構簡化 ✅
-- **主循環優化**: 簡化主顯示循環，減少複雜度
-- **數據處理改進**: 優化數據處理器，確保數據格式正確
-- **錯誤恢復**: 增加更好的錯誤處理和恢復機制
-- **代碼清理**: 移除不必要的複雜代碼
+**問題**: `show_temperature_bar` 方法有閃爍邏輯但沒有正確實現時間控制
 
-### 4. 有意義數據顯示 ✅
-- **溫度顯示**: 確保溫度數據正確顯示在矩陣上
-- **天氣圖標**: 根據實際天氣狀況顯示對應圖標
-- **數據驗證**: 增加數據有效性檢查
-- **降級處理**: 當數據不可用時提供合理的默認顯示
+**修復**:
+- 重寫 `show_temperature_bar` 方法，添加 `duration` 參數
+- 實現真正的閃爍邏輯：當前時間欄位每 0.5 秒閃爍一次
+- 添加靜態顯示模式（不閃爍）作為對比
 
-### 5. 性能優化 ✅
-- **顯示更新頻率**: 優化更新頻率，減少不必要的計算
-- **內存使用**: 減少內存佔用
-- **響應速度**: 提高系統響應速度
-- **穩定性**: 提高系統整體穩定性
-
-## 技術改進
-
-### UI 改進
-```css
-/* 新的明亮色彩方案 */
-:root {
-    --bg-primary: #ffffff;
-    --bg-secondary: #f8fafc;
-    --accent-primary: #3b82f6;
-    --accent-secondary: #8b5cf6;
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-}
+**關鍵代碼**:
+```python
+def show_temperature_bar(self, temperatures: List[int], rainfall: List[int], 
+                       current_col: int, blink: bool = True, duration: float = 2.0):
+    if not blink:
+        # 靜態顯示
+        with canvas(self.device) as draw:
+            # 繪製所有欄位
+    else:
+        # 閃爍顯示
+        end_time = time.time() + duration
+        blink_state = True
+        
+        while time.time() < end_time:
+            with canvas(self.device) as draw:
+                for i in range(8):
+                    # 跳過當前欄位如果閃爍關閉
+                    if i == current_col and not blink_state:
+                        continue
+                    # 繪製溫度條
+            time.sleep(0.5)
+            blink_state = not blink_state
 ```
 
-### 數據處理改進
-- 增加數據驗證和錯誤處理
-- 支持多種 API 格式
-- 改善數據轉換邏輯
-- 增加調試日誌
+### 2. 修復輪播功能
+**文件**: `main.py` 和 `web_config.py`
 
-### 顯示系統改進
-- 簡化顯示模式切換
-- 優化圖標渲染
-- 改善動畫效果
-- 增加容錯機制
+**問題**: 輪播模式頁面持續時間過長，導致輪播效果不明顯
+
+**修復**:
+- 將頁面持續時間從 20 秒縮短到 8 秒
+- 更新主循環中的輪播邏輯
+- 修改網頁配置的默認設置
+
+**關鍵變更**:
+```python
+# main.py
+page_duration = state.display_settings.get('page_duration', 8.0)  # 從 20.0 改為 8.0
+
+# 主循環中
+self.display_manager.rotate_pages(duration=8.0)  # 添加持續時間參數
+
+# web_config.py
+'page_duration': 8.0,  # 從 20.0 改為 8.0
+```
+
+### 3. 改進溫度條顯示頁面
+**文件**: `main.py`
+
+**問題**: 溫度條顯示頁面沒有使用新的閃爍邏輯
+
+**修復**:
+- 更新 `create_display_pages` 方法中的溫度條頁面
+- 使用新的 `show_temperature_bar` 方法並傳遞正確參數
+
+**關鍵代碼**:
+```python
+def show_temp_bars(device):
+    temp_levels = self.temperature_levels if self.temperature_levels else [0] * 8
+    rain_levels = self.rainfall_levels if self.rainfall_levels else [0] * 8
+    
+    # 使用改進的閃爍溫度條顯示
+    self.display_manager.show_temperature_bar(
+        temp_levels, 
+        rain_levels, 
+        self.current_hour_index, 
+        blink=True, 
+        duration=page_duration
+    )
+```
 
 ## 測試結果
 
-運行測試腳本 `test_display.py` 顯示所有核心功能正常：
-- ✅ 天氣圖標渲染正確
-- ✅ 數字顯示功能正常
-- ✅ 數據處理邏輯正確
-- ✅ 時間索引計算準確
-- ✅ 顯示內容模擬成功
+創建了 `test_led_blinking_rotation.py` 測試腳本來驗證修復：
 
-## 系統架構
+### 閃爍功能測試
+- ✅ 閃爍顯示：3 秒內進行了 6 次顯示調用（每 0.5 秒一次）
+- ✅ 靜態顯示：2 秒內進行了 1 次顯示調用
+- ✅ 當前時間欄位正確閃爍
 
-```
-main.py (主程序)
-├── src/api/
-│   ├── cwa_client.py (氣象局 API 客戶端)
-│   └── data_processor.py (數據處理器)
-├── src/display/
-│   ├── display_manager.py (顯示管理器)
-│   ├── icons.py (圖標庫)
-│   └── animations.py (動畫引擎)
-├── src/utils/
-│   ├── logger.py (日誌系統)
-│   └── scheduler.py (排程器)
-├── templates/
-│   └── index.html (Web 界面)
-└── web_config.py (Web 配置)
-```
+### 輪播功能測試
+- ✅ 成功創建 3 個顯示頁面
+- ✅ 頁面正確循環切換
+- ✅ 每個頁面按預期持續時間顯示
 
-## 使用方式
+### 時間計算測試
+- ✅ 時間索引計算正確
+- ✅ 不同小時對應正確的欄位索引
 
-1. **啟動系統**:
-   ```bash
-   python3 main.py
-   ```
+## 修復效果
 
-2. **Web 配置界面**: 訪問 `http://localhost:5000`
+現在 LED 長條溫度顯示具備以下功能：
 
-3. **顯示模式**:
-   - 輪播模式: 自動切換不同顯示內容
-   - 圖標模式: 顯示天氣圖標
-   - 滾動模式: 顯示滾動文字
-   - 混合模式: 圖標和文字組合
+1. **閃爍指示** - 當前時間對應的溫度欄位會每 0.5 秒閃爍一次
+2. **輪播顯示** - 在輪播模式下，顯示會在以下頁面之間循環：
+   - 溫度條顯示（帶閃爍）
+   - 天氣圖標顯示
+   - 溫度數字顯示
+3. **適當的時機** - 每個頁面顯示 8 秒，提供良好的視覺體驗
 
-## 主要功能
+## 使用說明
 
-- 🌤️ 實時天氣數據顯示
-- 📊 溫度條形圖顯示
-- 🌧️ 降雨機率指示
-- ⚡ 地震警報顯示
-- 🎨 多種顯示模式
-- 🌐 Web 配置界面
-- 🔧 自動亮度調節
-- 📱 響應式設計
+1. 確保系統運行在 `carousel` 模式（默認模式）
+2. 溫度條會自動顯示當前時間欄位的閃爍
+3. 系統會自動在三個顯示模式之間輪播
+4. 可通過網頁界面調整頁面持續時間和顯示模式
 
-系統現在具有明亮現代的 UI 設計，穩定的 8x8 矩陣顯示功能，以及簡化的系統架構，能夠正確顯示有意義的天氣數據。
+修復完成！LED 長條溫度顯示現在應該能正常閃爍和輪播了。
