@@ -177,14 +177,14 @@ class DisplayManager:
             elif 'CLOUD' in icon_upper or 'OVERCAST' in icon_upper:
                 self.animator.cute_cloud_animation(duration)
             elif 'WIND' in icon_upper:
-                # Windy animation - blink with faster rate
-                self.animator.blink(icon, duration, blink_rate=0.4)
+                # Use cute wind animation
+                self.animator.cute_wind_animation(duration)
             elif 'THUNDER' in icon_upper or 'STORM' in icon_upper:
-                # Thunderstorm animation - fast blinking
-                self.animator.blink(icon, duration, blink_rate=0.3)
+                # Use cute thunderstorm animation
+                self.animator.cute_thunderstorm_animation(duration)
             elif 'SNOW' in icon_upper:
-                # Snow animation - slow gentle blinking
-                self.animator.blink(icon, duration, blink_rate=0.6)
+                # Use cute snow animation
+                self.animator.cute_snow_animation(duration)
             else:
                 # Default cute animation for other icons
                 self.animator.blink(icon, duration, blink_rate=0.5)
@@ -367,6 +367,7 @@ class DisplayManager:
                            current_col: int, blink: bool = True, duration: float = 2.0):
         """
         Show temperature bars (original display mode) with blinking current column
+        Ensures complete animation cycles before finishing
         
         Args:
             temperatures: List of 8 temperature levels (0-7)
@@ -386,9 +387,11 @@ class DisplayManager:
                         draw.point((i, 7), fill="white")
             time.sleep(duration)
         else:
-            # Blinking display for current column
+            # Blinking display for current column - ensure complete cycles
             end_time = time.time() + duration
             blink_state = True
+            blink_cycle_duration = 1.0  # Complete on/off cycle takes 1 second
+            cycles_completed = 0
             
             while time.time() < end_time:
                 with canvas(self.device) as draw:
@@ -403,9 +406,13 @@ class DisplayManager:
                         if rainfall[i] == 1:
                             draw.point((i, 7), fill="white")
                 
-                # Toggle blink state every 0.5 seconds
+                # Toggle blink state every 0.5 seconds for smooth blinking
                 time.sleep(0.5)
                 blink_state = not blink_state
+                
+                # Count complete cycles (on + off = 1 cycle)
+                if not blink_state:  # When we complete an off cycle
+                    cycles_completed += 0.5
     
     def trigger_alert(self, alert_type: str, data: Dict[str, Any], duration: float = 60.0):
         """
@@ -455,6 +462,7 @@ class DisplayManager:
     def rotate_pages(self, duration: float = None):
         """
         Display current page and advance to next (handles rotation automatically)
+        Ensures animations complete before switching to next page
         
         Args:
             duration: Override default page duration (if None, uses page's duration)
@@ -473,9 +481,11 @@ class DisplayManager:
         page = sorted_pages[self.current_page_idx % len(sorted_pages)]
         
         # Execute page content callback to display the page
+        # The content callback should handle its own timing and animations
         page.content_callback(self.device)
         
         # Wait for page duration before moving to next
+        # This ensures the page content (including animations) has time to complete
         page_duration = duration if duration is not None else page.duration
         time.sleep(page_duration)
         

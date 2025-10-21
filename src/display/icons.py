@@ -416,9 +416,9 @@ class AnimationFrames:
         ],
     ]
     
-    # Cute cloud animation frames (3 frames)
+    # Cute cloud animation frames (5 frames) - floating and expressive
     CUTE_CLOUD = [
-        # Frame 1 - normal
+        # Frame 1 - normal with happy face
         [
             0b00011000,
             0b00111100,
@@ -429,7 +429,7 @@ class AnimationFrames:
             0b00111100,
             0b00011000,
         ],
-        # Frame 2 - slightly shifted up
+        # Frame 2 - floating up with winking eye
         [
             0b00111100,
             0b01111110,
@@ -440,7 +440,29 @@ class AnimationFrames:
             0b00011000,
             0b00000000,
         ],
-        # Frame 3 - back to normal
+        # Frame 3 - floating down with surprised expression
+        [
+            0b00000000,
+            0b00011000,
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b01111110,
+            0b00111100,
+        ],
+        # Frame 4 - back to center with smile
+        [
+            0b00011000,
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b01111110,
+            0b00111100,
+            0b00011000,
+        ],
+        # Frame 5 - gentle bounce
         [
             0b00011000,
             0b00111100,
@@ -453,9 +475,9 @@ class AnimationFrames:
         ],
     ]
     
-    # Cute sun animation frames (4 frames)
+    # Cute sun animation frames (6 frames) - more expressive and cute
     CUTE_SUN = [
-        # Frame 1 - normal with rays
+        # Frame 1 - normal with rays and happy expression
         [
             0b10010001,
             0b01010100,
@@ -466,7 +488,7 @@ class AnimationFrames:
             0b01010100,
             0b10010001,
         ],
-        # Frame 2 - winking (closed left eye)
+        # Frame 2 - winking left eye with smile
         [
             0b10000001,
             0b01010100,
@@ -477,7 +499,7 @@ class AnimationFrames:
             0b01010100,
             0b10010001,
         ],
-        # Frame 3 - normal with rays
+        # Frame 3 - both eyes open, bigger smile
         [
             0b10010001,
             0b01010100,
@@ -488,7 +510,7 @@ class AnimationFrames:
             0b01010100,
             0b10010001,
         ],
-        # Frame 4 - winking (closed right eye)
+        # Frame 4 - winking right eye
         [
             0b10010001,
             0b01010100,
@@ -498,12 +520,34 @@ class AnimationFrames:
             0b00111000,
             0b01010100,
             0b10000001,
+        ],
+        # Frame 5 - surprised expression (bigger eyes)
+        [
+            0b11011011,
+            0b01010100,
+            0b00111000,
+            0b01111100,
+            0b01111100,
+            0b00111000,
+            0b01010100,
+            0b11011011,
+        ],
+        # Frame 6 - back to normal happy
+        [
+            0b10010001,
+            0b01010100,
+            0b00111000,
+            0b01111100,
+            0b01111100,
+            0b00111000,
+            0b01010100,
+            0b10010001,
         ],
     ]
     
-    # Cute rain animation frames (4 frames)
+    # Cute rain animation frames (6 frames) - more dynamic and cute
     CUTE_RAIN = [
-        # Frame 1 - normal rain
+        # Frame 1 - normal rain with happy cloud
         [
             0b00111100,
             0b01111110,
@@ -514,7 +558,7 @@ class AnimationFrames:
             0b10101010,
             0b00000000,
         ],
-        # Frame 2 - rain drops bouncing
+        # Frame 2 - rain drops bouncing with cloud smile
         [
             0b00111100,
             0b01111110,
@@ -525,26 +569,203 @@ class AnimationFrames:
             0b00000000,
             0b10101010,
         ],
-        # Frame 3 - rain drops falling
+        # Frame 3 - heavy rain with cloud surprised
         [
             0b00111100,
             0b01111110,
             0b11111111,
             0b11111111,
             0b10101010,
+            0b01010101,
+            0b10101010,
+            0b01010101,
+        ],
+        # Frame 4 - light rain with cloud winking
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
             0b00000000,
+            0b10101010,
+            0b00000000,
+            0b01010101,
+        ],
+        # Frame 5 - rain stopping with cloud happy
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b00000000,
+            0b00000000,
+            0b10101010,
+            0b00000000,
+        ],
+        # Frame 6 - back to normal
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b01010101,
+            0b00000000,
+            0b10101010,
+            0b00000000,
+        ],
+    ]
+    
+    # Cute snow animation frames (4 frames) - gentle and magical
+    CUTE_SNOW = [
+        # Frame 1 - gentle snow with happy cloud
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b00000000,
+            0b10101010,
+            0b00000000,
+            0b01010101,
+        ],
+        # Frame 2 - snowflakes dancing
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b01010101,
+            0b00000000,
+            0b10101010,
+            0b00000000,
+        ],
+        # Frame 3 - more snow with cloud excited
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b10101010,
+            0b01010101,
+            0b00000000,
+            0b10101010,
+        ],
+        # Frame 4 - gentle snow ending
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b00000000,
+            0b10101010,
             0b01010101,
             0b00000000,
         ],
-        # Frame 4 - rain drops bouncing
+    ]
+    
+    # Cute wind animation frames (4 frames) - playful and dynamic
+    CUTE_WIND = [
+        # Frame 1 - gentle breeze
+        [
+            0b00000000,
+            0b11111100,
+            0b00000110,
+            0b00000000,
+            0b01111111,
+            0b11000000,
+            0b00000000,
+            0b00000000,
+        ],
+        # Frame 2 - stronger wind
+        [
+            0b00000000,
+            0b00000000,
+            0b11111100,
+            0b00000110,
+            0b00000000,
+            0b01111111,
+            0b11000000,
+            0b00000000,
+        ],
+        # Frame 3 - very strong wind
+        [
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b11111100,
+            0b00000110,
+            0b00000000,
+            0b01111111,
+            0b11000000,
+        ],
+        # Frame 4 - wind calming down
+        [
+            0b00000000,
+            0b11111100,
+            0b00000110,
+            0b00000000,
+            0b01111111,
+            0b11000000,
+            0b00000000,
+            0b00000000,
+        ],
+    ]
+    
+    # Cute thunderstorm animation frames (5 frames) - dramatic but cute
+    CUTE_THUNDERSTORM = [
+        # Frame 1 - dark cloud with lightning
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b00011000,
+            0b00110000,
+            0b01100000,
+            0b11000000,
+        ],
+        # Frame 2 - lightning flash
         [
             0b00111100,
             0b01111110,
             0b11111111,
             0b11111111,
             0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+        ],
+        # Frame 3 - rain with thunder
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b01010101,
+            0b00000000,
             0b10101010,
             0b00000000,
-            0b01010101,
+        ],
+        # Frame 4 - more lightning
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+            0b00000000,
+        ],
+        # Frame 5 - storm calming
+        [
+            0b00111100,
+            0b01111110,
+            0b11111111,
+            0b11111111,
+            0b00011000,
+            0b00110000,
+            0b01100000,
+            0b11000000,
         ],
     ]

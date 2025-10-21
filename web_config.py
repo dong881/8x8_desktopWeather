@@ -25,7 +25,7 @@ class WebConfigState:
         }
         self.display_settings = {
             'mode': 'carousel',
-            'page_duration': 8.0,  # Shorter duration for better rotation
+            'page_duration': 10.0,  # Longer duration to ensure animations complete
             'carousel_items': ['temperature_bars', 'weather_icon', 'temperature_display'],
             'brightness': 255,
             'auto_brightness': True
