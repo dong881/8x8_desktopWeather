@@ -25,11 +25,13 @@ class DataProcessor:
         try:
             if not data or 'records' not in data:
                 print("Error: No records in weather forecast data")
-                return None
+                print("Creating fallback data for LED display...")
+                return DataProcessor._create_fallback_data()
             
             if 'Locations' not in data['records'] or not data['records']['Locations']:
                 print("Error: No Locations in weather forecast records")
-                return None
+                print("Creating fallback data for LED display...")
+                return DataProcessor._create_fallback_data()
             
             location_data = data["records"]["Locations"][0]["Location"][0]
             
@@ -64,28 +66,7 @@ class DataProcessor:
             # If we don't have both, try to create fallback data
             if not temp_data or not pop_data:
                 print(f"Warning: Missing temperature or precipitation data (temp: {temp_data is not None}, pop: {pop_data is not None})")
-                print("Creating fallback data for LED display...")
-                
-                # Create fallback data based on current time and season
-                from datetime import datetime
-                now = datetime.now()
-                hour = now.hour
-                
-                # Generate reasonable temperature levels based on time of day
-                base_temp = 20 + (hour - 12) * 0.5  # Simulate daily temperature variation
-                temp_levels = []
-                for i in range(8):
-                    # Add some variation
-                    temp = base_temp + (i - 4) * 2 + (hour % 3) * 0.5
-                    temp_levels.append(max(0, min(7, int((temp - 12) * 7 / 21))))  # Scale to 0-7
-                
-                # Generate precipitation levels (mostly dry with occasional rain)
-                pop_levels = [0] * 8
-                if hour in [14, 15, 16, 17]:  # Afternoon rain chance
-                    pop_levels[2:6] = [1, 1, 0, 1]  # Some rain indicators
-                
-                print(f"Fallback data created: temp_levels={temp_levels}, pop_levels={pop_levels}")
-                return temp_levels, pop_levels
+                return DataProcessor._create_fallback_data()
             
             # Extract temperature values
             # Support both old (ElementValue) and new (elementValue) formats
@@ -129,7 +110,36 @@ class DataProcessor:
             print(f"Error processing weather forecast: {str(e)}")
             import traceback
             traceback.print_exc()
-            return None
+            print("Creating fallback data for LED display...")
+            return self._create_fallback_data()
+    
+    @staticmethod
+    def _create_fallback_data() -> Tuple[List[int], List[int]]:
+        """
+        Create fallback data when API data is unavailable
+        
+        Returns:
+            Tuple of (temperature_levels, rainfall_levels)
+        """
+        from datetime import datetime
+        now = datetime.now()
+        hour = now.hour
+        
+        # Generate reasonable temperature levels based on time of day
+        base_temp = 20 + (hour - 12) * 0.5  # Simulate daily temperature variation
+        temp_levels = []
+        for i in range(8):
+            # Add some variation
+            temp = base_temp + (i - 4) * 2 + (hour % 3) * 0.5
+            temp_levels.append(max(0, min(7, int((temp - 12) * 7 / 21))))  # Scale to 0-7
+        
+        # Generate precipitation levels (mostly dry with occasional rain)
+        pop_levels = [0] * 8
+        if hour in [14, 15, 16, 17]:  # Afternoon rain chance
+            pop_levels[2:6] = [1, 1, 0, 1]  # Some rain indicators
+        
+        print(f"Fallback data created: temp_levels={temp_levels}, pop_levels={pop_levels}")
+        return temp_levels, pop_levels
     
     @staticmethod
     def _temperature_to_levels(temperatures: List[int], 

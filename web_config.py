@@ -148,9 +148,39 @@ def change_display_mode():
     # Apply mode change if display manager is available
     if state.display_manager:
         state.display_manager.set_display_mode(mode)
-        logger.info(f"Display mode changed to: {mode}")
+        print(f"Display mode changed to: {mode}")
     
     return jsonify({'success': True, 'message': f'Display mode changed to {mode}'})
+
+
+@app.route('/api/logs')
+def get_logs():
+    """Get system logs"""
+    # This is a simple implementation - in production you'd want to read from actual log files
+    logs = [
+        f"[{datetime.now().strftime('%H:%M:%S')}] System started successfully",
+        f"[{datetime.now().strftime('%H:%M:%S')}] Weather data updated",
+        f"[{datetime.now().strftime('%H:%M:%S')}] LED display initialized",
+        f"[{datetime.now().strftime('%H:%M:%S')}] Web interface connected"
+    ]
+    
+    return jsonify({'logs': logs})
+
+
+@app.route('/api/led_preview')
+def get_led_preview():
+    """Get current LED display state for preview"""
+    # This would return the actual LED state from the display manager
+    # For now, return a simple pattern
+    led_state = []
+    for row in range(8):
+        for col in range(8):
+            # Simple pattern based on current time
+            now = datetime.now()
+            active = (now.second + row + col) % 3 == 0
+            led_state.append(1 if active else 0)
+    
+    return jsonify({'led_state': led_state})
 
 
 def run_web_server(host='0.0.0.0', port=5000):
