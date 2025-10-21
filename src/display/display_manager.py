@@ -153,28 +153,40 @@ class DisplayManager:
         if self.auto_brightness_enabled:
             self.apply_brightness()
     
-    def show_icon(self, icon_name: str, duration: float = 3.0, animate: bool = False):
+    def show_icon(self, icon_name: str, duration: float = 3.0, animate: bool = True):
         """
-        Display a weather icon
+        Display a weather icon (full screen, centered)
         
         Args:
             icon_name: Name of icon to display
             duration: Display duration
-            animate: Whether to animate the icon
+            animate: Whether to animate the icon (default True for cute animations)
         """
         icon = WeatherIcons.get_icon(icon_name)
         
         if animate:
-            if icon_name.upper() == 'RAINY':
+            # Always use cute animations by default
+            icon_upper = icon_name.upper()
+            if 'RAIN' in icon_upper or 'SHOWER' in icon_upper:
                 self.animator.cute_rain_animation(duration)
-            elif icon_name.upper() == 'SUNNY':
+            elif 'SUN' in icon_upper or 'CLEAR' in icon_upper:
                 self.animator.cute_sun_animation(duration)
-            elif icon_name.upper() == 'CLOUDY':
+            elif 'CLOUD' in icon_upper or 'OVERCAST' in icon_upper:
                 self.animator.cute_cloud_animation(duration)
+            elif 'WIND' in icon_upper:
+                # Windy animation - blink with faster rate
+                self.animator.blink(icon, duration, blink_rate=0.4)
+            elif 'THUNDER' in icon_upper or 'STORM' in icon_upper:
+                # Thunderstorm animation - fast blinking
+                self.animator.blink(icon, duration, blink_rate=0.3)
+            elif 'SNOW' in icon_upper:
+                # Snow animation - slow gentle blinking
+                self.animator.blink(icon, duration, blink_rate=0.6)
             else:
                 # Default cute animation for other icons
-                self.animator.blink(icon, duration, blink_rate=0.8)
+                self.animator.blink(icon, duration, blink_rate=0.5)
         else:
+            # Static display - full screen, centered (0,0 for 8x8)
             with canvas(self.device) as draw:
                 WeatherIcons.draw_icon(draw, 0, 0, icon)
             time.sleep(duration)
@@ -531,7 +543,7 @@ class DisplayManager:
     def show_mode_content(self, weather_data: Dict[str, Any] = None, temperature_data: List[int] = None, 
                          rainfall_data: List[int] = None, current_col: int = 0):
         """
-        Show content based on current display mode
+        Show content based on current display mode (all animations enabled by default)
         
         Args:
             weather_data: Current weather observation data
@@ -543,18 +555,19 @@ class DisplayManager:
             if weather_data and weather_data.get('weather') != 'N/A':
                 weather_desc = weather_data.get('weather', '')
                 icon_name = self._get_weather_icon_name(weather_desc)
-                self.show_icon(icon_name, duration=8.0, animate=True)
+                # Always animate icons for beautiful display
+                self.show_icon(icon_name, duration=10.0, animate=True)
             else:
-                # Default sunny icon if no weather data
-                self.show_icon('sunny', duration=8.0, animate=True)
+                # Default sunny icon if no weather data with animation
+                self.show_icon('sunny', duration=10.0, animate=True)
         
         elif self.current_mode == self.MODE_SCROLLING:
             if weather_data:
                 temp = weather_data.get('temperature', 0)
                 weather = weather_data.get('weather', 'N/A')
-                text = f"{temp:.0f}°C {weather[:8]}"
+                text = f"{temp:.0f}C {weather[:8]}"
             else:
-                text = "NO DATA"
+                text = "Loading..."
             self.show_text_scroll(text, speed=0.08)
         
         elif self.current_mode == self.MODE_MIXED:
@@ -562,18 +575,18 @@ class DisplayManager:
                 weather_desc = weather_data.get('weather', '')
                 icon_name = self._get_weather_icon_name(weather_desc)
                 temp = weather_data.get('temperature', 0)
-                text = f"{temp:.0f}°C"
+                # Show icon with animation, then temperature
+                self.show_icon(icon_name, duration=5.0, animate=True)
             else:
-                icon_name = 'sunny'
-                text = "N/A"
-            self.show_mixed(icon_name, text, duration=8.0)
+                # Fallback to sunny animation
+                self.show_icon('sunny', duration=5.0, animate=True)
         
         elif self.current_mode == self.MODE_ALERT:
-            # Show alert mode - blinking warning
-            self.animator.blink(WeatherIcons.WARNING, duration=3.0)
+            # Show alert mode - blinking warning with animation
+            self.animator.blink(WeatherIcons.WARNING, duration=3.0, blink_rate=0.3)
             if weather_data:
                 temp = weather_data.get('temperature', 0)
-                text = f"ALERT {temp:.0f}°C"
+                text = f"ALERT {temp:.0f}C"
             else:
                 text = "ALERT MODE"
             self.show_text_scroll(text, speed=0.1)
@@ -583,8 +596,8 @@ class DisplayManager:
             if temperature_data and rainfall_data:
                 self.show_temperature_bar(temperature_data, rainfall_data, current_col, blink=True)
             else:
-                # Fallback to icon display
-                self.show_icon('sunny', duration=5.0)
+                # Fallback to animated sunny icon
+                self.show_icon('sunny', duration=5.0, animate=True)
     
     def _get_weather_icon_name(self, weather_desc: str) -> str:
         """Get appropriate icon name from weather description"""
