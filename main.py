@@ -164,18 +164,31 @@ class EnhancedWeatherDisplay:
                 DisplayPage("weather_icon", show_weather_icon, duration=page_duration, priority=3)
             )
         
-        # Page 3: Temperature display (full screen, centered)
+        # Page 3: Temperature display (full screen, centered with proper digit spacing)
         if 'temperature_display' in carousel_items and self.observation_data and self.observation_data.get('temperature', 0) > 0:
             temp = int(self.observation_data.get('temperature', 0))
             
             def show_temperature(device):
                 with canvas(device) as draw:
-                    # Draw large temperature digits centered (2 digits, each 4 pixels wide)
+                    # Draw large temperature digits centered on 8x8 display
+                    # Each digit is 4 pixels wide, total 8 pixels for 2 digits
                     temp_str = f"{temp:02d}"
+                    
+                    # Draw first digit at x=0, y=0 (left half of display)
                     if len(temp_str) >= 1:
-                        WeatherIcons.draw_digit(draw, 0, 0, temp_str[0] if len(temp_str) > 1 else '0')
+                        digit_icon = WeatherIcons.DIGITS.get(temp_str[0], WeatherIcons.DIGITS['0'])
+                        for row in range(8):
+                            for col in range(4):  # Only use first 4 columns
+                                if digit_icon[row] & (1 << (7 - col)):
+                                    draw.point((col, row), fill="white")
+                    
+                    # Draw second digit at x=4, y=0 (right half of display)
                     if len(temp_str) >= 2:
-                        WeatherIcons.draw_digit(draw, 4, 0, temp_str[1])
+                        digit_icon = WeatherIcons.DIGITS.get(temp_str[1], WeatherIcons.DIGITS['0'])
+                        for row in range(8):
+                            for col in range(4):  # Use columns 4-7 for second digit
+                                if digit_icon[row] & (1 << (7 - col)):
+                                    draw.point((col + 4, row), fill="white")
             
             self.display_manager.add_page(
                 DisplayPage("temperature_display", show_temperature, duration=page_duration, priority=3)
@@ -245,21 +258,18 @@ class EnhancedWeatherDisplay:
                     )
                     
                     update_counter += 1
-                    time.sleep(1)
                     
-                    # Rotate through display pages (less frequent at night)
-                    current_hour = now.hour
-                    rotation_interval = 40 if 22 <= current_hour or current_hour <= 6 else 20  # Slower at night
-                    
-                    if (current_time - last_page_rotation >= rotation_interval and 
-                        self.display_manager.current_mode == 'carousel'):
-                        self.create_display_pages()
-                        if len(self.display_manager.pages) > 1:
-                            # Show 2 alternate pages with proper timing
-                            self.display_manager.rotate_pages()
-                            time.sleep(0.5)  # Brief pause between pages
-                            self.display_manager.rotate_pages()
-                        last_page_rotation = current_time
+                    # Rotate through display pages in carousel mode
+                    if self.display_manager.current_mode == 'carousel':
+                        # Recreate pages to ensure fresh data
+                        if current_time - last_page_rotation >= 1:  # Check every second
+                            self.create_display_pages()
+                            if len(self.display_manager.pages) > 0:
+                                # Rotate to next page (display_manager handles timing internally)
+                                self.display_manager.rotate_pages()
+                            last_page_rotation = current_time
+                    else:
+                        time.sleep(1)
                 
                 except KeyboardInterrupt:
                     raise
