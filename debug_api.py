@@ -53,7 +53,7 @@ def debug_weather_api():
     print("\n" + "=" * 60)
     
     # Test precipitation API
-    url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
     print("Precipitation URL:", url_pop)
     
     try:
