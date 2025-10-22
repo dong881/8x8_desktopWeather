@@ -1204,6 +1204,899 @@ def draw_heat_wave_animation(draw, frame):
         draw.point((3, 6), fill="white")
         draw.point((4, 6), fill="white")
 
+def draw_rainbow_animation(draw, frame):
+    """Draw cute rainbow weather animation - rainbow with sun and clouds"""
+    # Happy sun with face
+    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
+    # Sun face
+    draw.point((2, 2), fill="black")  # eye
+    draw.point((5, 2), fill="black")  # eye
+    draw.point((2, 3), fill="black")  # eye
+    draw.point((5, 3), fill="black")  # eye
+    draw.point((1, 4), fill="black")  # smile
+    draw.point((2, 5), fill="black")  # smile
+    draw.point((3, 6), fill="black")  # smile
+    draw.point((4, 6), fill="black")  # smile
+    draw.point((5, 5), fill="black")  # smile
+    draw.point((6, 4), fill="black")  # smile
+    
+    # Sun rays
+    ray_frame = frame % 4
+    if ray_frame == 0 or ray_frame == 1:
+        draw.point((0, 0), fill="white")
+        draw.point((7, 0), fill="white")
+        draw.point((0, 7), fill="white")
+        draw.point((7, 7), fill="white")
+        draw.point((3, 0), fill="white")
+        draw.point((4, 0), fill="white")
+        draw.point((3, 7), fill="white")
+        draw.point((4, 7), fill="white")
+        draw.point((0, 3), fill="white")
+        draw.point((0, 4), fill="white")
+        draw.point((7, 3), fill="white")
+        draw.point((7, 4), fill="white")
+    
+    # Animated rainbow arc
+    rainbow_frame = frame % 8
+    if rainbow_frame < 4:
+        # Rainbow appears
+        for i in range(rainbow_frame + 1):
+            x = 0 + i
+            y = 2 + i
+            if x < 8 and y < 8:
+                draw.point((x, y), fill="white")
+            x = 7 - i
+            if x >= 0 and y < 8:
+                draw.point((x, y), fill="white")
+    else:
+        # Full rainbow
+        for i in range(4):
+            x = 0 + i
+            y = 2 + i
+            if x < 8 and y < 8:
+                draw.point((x, y), fill="white")
+            x = 7 - i
+            if x >= 0 and y < 8:
+                draw.point((x, y), fill="white")
+    
+    # Floating clouds
+    cloud_offset = frame % 3
+    if cloud_offset == 0:
+        draw.point((0, 0), fill="white")
+        draw.point((1, 0), fill="white")
+        draw.point((2, 0), fill="white")
+        draw.point((1, 1), fill="white")
+    elif cloud_offset == 1:
+        draw.point((5, 0), fill="white")
+        draw.point((6, 0), fill="white")
+        draw.point((7, 0), fill="white")
+        draw.point((6, 1), fill="white")
+    else:
+        draw.point((2, 0), fill="white")
+        draw.point((3, 0), fill="white")
+        draw.point((4, 0), fill="white")
+        draw.point((5, 0), fill="white")
+        draw.point((3, 1), fill="white")
+        draw.point((4, 1), fill="white")
+
+def draw_foggy_animation(draw, frame):
+    """Draw mysterious foggy weather animation - thick fog with hidden elements"""
+    # Thick fog layers
+    fog_frame = frame % 6
+    for layer in range(3):
+        for x in range(8):
+            for y in range(2 + layer, 6 - layer):
+                if (x + y + fog_frame + layer) % 3 == 0:
+                    draw.point((x, y), fill="white")
+    
+    # Mysterious eyes peeking through fog
+    eye_frame = frame % 8
+    if eye_frame < 4:
+        # Left eye appears
+        draw.point((1, 2), fill="black")
+        draw.point((2, 2), fill="black")
+        draw.point((1, 3), fill="black")
+        draw.point((2, 3), fill="black")
+    if eye_frame >= 4:
+        # Right eye appears
+        draw.point((5, 2), fill="black")
+        draw.point((6, 2), fill="black")
+        draw.point((5, 3), fill="black")
+        draw.point((6, 3), fill="black")
+    
+    # Floating fog particles
+    particle_frame = frame % 4
+    for i in range(particle_frame + 1):
+        x = (i * 2) % 8
+        y = 1 + (i % 2)
+        draw.point((x, y), fill="white")
+        x = (i * 2 + 1) % 8
+        y = 6 + (i % 2)
+        draw.point((x, y), fill="white")
+    
+    # Mysterious smile
+    if frame % 8 >= 6:
+        draw.point((2, 5), fill="black")
+        draw.point((3, 5), fill="black")
+        draw.point((4, 5), fill="black")
+        draw.point((5, 5), fill="black")
+
+def draw_windy_animation(draw, frame):
+    """Draw windy weather animation - moving elements with wind effects"""
+    # Windy cloud with worried face
+    cloud_offset = frame % 4
+    # Cloud body
+    draw.point((0 + cloud_offset, 1), fill="white")
+    draw.point((1 + cloud_offset, 0), fill="white")
+    draw.point((2 + cloud_offset, 0), fill="white")
+    draw.point((3 + cloud_offset, 0), fill="white")
+    draw.point((4 + cloud_offset, 1), fill="white")
+    draw.point((5 + cloud_offset, 2), fill="white")
+    draw.point((1 + cloud_offset, 1), fill="white")
+    draw.point((2 + cloud_offset, 1), fill="white")
+    draw.point((3 + cloud_offset, 1), fill="white")
+    draw.point((4 + cloud_offset, 2), fill="white")
+    
+    # Worried cloud face
+    if cloud_offset < 2:
+        draw.point((1, 0), fill="black")  # worried eye
+        draw.point((3, 0), fill="black")  # worried eye
+        draw.point((1, 1), fill="black")  # worried eye
+        draw.point((3, 1), fill="black")  # worried eye
+        # Worried mouth
+        draw.point((2, 1), fill="black")  # worried mouth
+        draw.point((3, 1), fill="black")  # worried mouth
+    else:
+        draw.point((2, 0), fill="black")  # worried eye
+        draw.point((4, 0), fill="black")  # worried eye
+        draw.point((2, 1), fill="black")  # worried eye
+        draw.point((4, 1), fill="black")  # worried eye
+        # Worried mouth
+        draw.point((3, 1), fill="black")  # worried mouth
+        draw.point((4, 1), fill="black")  # worried mouth
+    
+    # Wind lines
+    wind_frame = frame % 6
+    for i in range(3):
+        x = (wind_frame + i * 2) % 8
+        y = 3 + i
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+    
+    # Flying leaves
+    leaf_frame = frame % 4
+    for i in range(2):
+        x = (leaf_frame + i * 3) % 8
+        y = 4 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+    
+    # Wind swirls
+    swirl_frame = frame % 8
+    if swirl_frame < 4:
+        draw.point((6, 5), fill="white")
+        draw.point((7, 5), fill="white")
+        draw.point((6, 6), fill="white")
+    else:
+        draw.point((0, 5), fill="white")
+        draw.point((1, 5), fill="white")
+        draw.point((0, 6), fill="white")
+
+def draw_aurora_animation(draw, frame):
+    """Draw aurora borealis animation - beautiful northern lights"""
+    # Aurora waves
+    aurora_frame = frame % 8
+    for wave in range(3):
+        wave_offset = (aurora_frame + wave * 2) % 8
+        for x in range(8):
+            y = 1 + wave + (x + wave_offset) % 2
+            if y < 7:
+                draw.point((x, y), fill="white")
+                if y < 6:
+                    draw.point((x, y + 1), fill="white")
+    
+    # Stars
+    star_frame = frame % 6
+    star_positions = [(1, 0), (6, 0), (0, 1), (7, 1), (2, 0), (5, 0)]
+    for i, (x, y) in enumerate(star_positions):
+        if (star_frame + i) % 3 == 0:
+            draw.point((x, y), fill="white")
+            if x < 7 and y < 7:
+                draw.point((x + 1, y), fill="white")
+                draw.point((x, y + 1), fill="white")
+    
+    # Aurora shimmer
+    shimmer_frame = frame % 4
+    if shimmer_frame == 0:
+        for x in [0, 2, 4, 6]:
+            draw.point((x, 2), fill="white")
+            draw.point((x, 3), fill="white")
+    elif shimmer_frame == 1:
+        for x in [1, 3, 5, 7]:
+            draw.point((x, 2), fill="white")
+            draw.point((x, 3), fill="white")
+    elif shimmer_frame == 2:
+        for x in [0, 1, 6, 7]:
+            draw.point((x, 3), fill="white")
+            draw.point((x, 4), fill="white")
+    else:
+        for x in [2, 3, 4, 5]:
+            draw.point((x, 3), fill="white")
+            draw.point((x, 4), fill="white")
+
+def draw_tornado_animation(draw, frame):
+    """Draw tornado animation - spinning funnel cloud"""
+    # Tornado funnel
+    tornado_frame = frame % 8
+    for i in range(4):
+        width = 2 + i
+        start_x = 3 - width // 2
+        for x in range(width):
+            y = 7 - i
+            if start_x + x < 8 and y >= 0:
+                draw.point((start_x + x, y), fill="white")
+    
+    # Spinning debris
+    debris_frame = frame % 6
+    for i in range(3):
+        angle = (debris_frame + i * 2) % 8
+        if angle < 4:
+            x = 3 + angle
+            y = 4 + i
+        else:
+            x = 3 - (angle - 4)
+            y = 4 + i
+        if 0 <= x < 8 and 0 <= y < 8:
+            draw.point((x, y), fill="white")
+    
+    # Wind lines around tornado
+    wind_frame = frame % 4
+    for i in range(2):
+        x = (wind_frame + i * 3) % 8
+        y = 2 + i
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+
+def draw_hail_animation(draw, frame):
+    """Draw hail animation - bouncing ice particles"""
+    # Angry cloud with hail
+    draw.point((0, 0), fill="white")
+    draw.point((1, 0), fill="white")
+    draw.point((2, 0), fill="white")
+    draw.point((3, 0), fill="white")
+    draw.point((4, 0), fill="white")
+    draw.point((5, 0), fill="white")
+    draw.point((6, 0), fill="white")
+    draw.point((7, 0), fill="white")
+    draw.point((1, 1), fill="white")
+    draw.point((2, 1), fill="white")
+    draw.point((3, 1), fill="white")
+    draw.point((4, 1), fill="white")
+    draw.point((5, 1), fill="white")
+    draw.point((6, 1), fill="white")
+    
+    # Angry cloud face
+    draw.point((2, 0), fill="black")  # angry eye
+    draw.point((5, 0), fill="black")  # angry eye
+    draw.point((2, 1), fill="black")  # angry eye
+    draw.point((5, 1), fill="black")  # angry eye
+    # Angry mouth
+    draw.point((1, 1), fill="black")  # angry mouth
+    draw.point((6, 1), fill="black")  # angry mouth
+    draw.point((2, 1), fill="black")  # angry mouth
+    draw.point((3, 1), fill="black")  # angry mouth
+    draw.point((4, 1), fill="black")  # angry mouth
+    draw.point((5, 1), fill="black")  # angry mouth
+    
+    # Bouncing hail stones
+    hail_frame = frame % 6
+    for i in range(4):
+        x = i * 2
+        y = 2 + (hail_frame + i) % 4
+        if y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7 and y < 7:
+                draw.point((x + 1, y), fill="white")
+                draw.point((x, y + 1), fill="white")
+                draw.point((x + 1, y + 1), fill="white")
+    
+    # Hail splashes
+    splash_frame = frame % 3
+    for i in range(3):
+        x = i * 2 + 1
+        y = 7
+        if splash_frame == 0:
+            draw.point((x, y), fill="white")
+        elif splash_frame == 1:
+            draw.point((x - 1, y), fill="white")
+            draw.point((x + 1, y), fill="white")
+        else:
+            draw.point((x, y), fill="white")
+            draw.point((x - 1, y), fill="white")
+            draw.point((x + 1, y), fill="white")
+
+def draw_sandstorm_animation(draw, frame):
+    """Draw sandstorm animation - swirling sand particles"""
+    # Sandstorm cloud
+    sand_frame = frame % 4
+    for y in range(3):
+        for x in range(8):
+            if (x + y + sand_frame) % 2 == 0:
+                draw.point((x, y), fill="white")
+    
+    # Swirling sand particles
+    swirl_frame = frame % 8
+    for i in range(6):
+        angle = (swirl_frame + i) % 8
+        if angle < 4:
+            x = 3 + angle
+            y = 3 + i // 2
+        else:
+            x = 3 - (angle - 4)
+            y = 3 + i // 2
+        if 0 <= x < 8 and 0 <= y < 8:
+            draw.point((x, y), fill="white")
+    
+    # Sand dunes
+    dune_frame = frame % 6
+    for i in range(3):
+        x = (dune_frame + i * 2) % 8
+        y = 6 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+
+def draw_meteor_animation(draw, frame):
+    """Draw meteor shower animation - shooting stars"""
+    # Night sky background
+    for y in range(2):
+        for x in range(8):
+            if (x + y + frame) % 4 == 0:
+                draw.point((x, y), fill="white")
+    
+    # Shooting meteors
+    meteor_frame = frame % 8
+    for i in range(2):
+        meteor_x = (meteor_frame + i * 3) % 8
+        meteor_y = 1 + (meteor_frame + i) % 4
+        if meteor_x < 8 and meteor_y < 8:
+            # Meteor head
+            draw.point((meteor_x, meteor_y), fill="white")
+            # Meteor tail
+            if meteor_x > 0 and meteor_y > 0:
+                draw.point((meteor_x - 1, meteor_y - 1), fill="white")
+            if meteor_x > 1 and meteor_y > 1:
+                draw.point((meteor_x - 2, meteor_y - 2), fill="white")
+    
+    # Stars
+    star_frame = frame % 6
+    star_positions = [(1, 0), (6, 0), (0, 1), (7, 1), (3, 0), (4, 0)]
+    for i, (x, y) in enumerate(star_positions):
+        if (star_frame + i) % 3 == 0:
+            draw.point((x, y), fill="white")
+            if x < 7 and y < 7:
+                draw.point((x + 1, y), fill="white")
+                draw.point((x, y + 1), fill="white")
+
+def draw_volcano_animation(draw, frame):
+    """Draw volcanic eruption animation - lava and ash"""
+    # Volcano mountain
+    draw.point((2, 4), fill="white")
+    draw.point((3, 4), fill="white")
+    draw.point((4, 4), fill="white")
+    draw.point((5, 4), fill="white")
+    draw.point((3, 5), fill="white")
+    draw.point((4, 5), fill="white")
+    draw.point((3, 6), fill="white")
+    draw.point((4, 6), fill="white")
+    draw.point((3, 7), fill="white")
+    draw.point((4, 7), fill="white")
+    
+    # Lava eruption
+    lava_frame = frame % 6
+    if lava_frame < 3:
+        # Lava flowing down
+        for i in range(lava_frame + 1):
+            y = 3 - i
+            draw.point((3, y), fill="white")
+            draw.point((4, y), fill="white")
+    else:
+        # Lava explosion
+        for i in range(3):
+            y = 3 - i
+            draw.point((3, y), fill="white")
+            draw.point((4, y), fill="white")
+        # Lava splashes
+        draw.point((2, 2), fill="white")
+        draw.point((5, 2), fill="white")
+        draw.point((1, 3), fill="white")
+        draw.point((6, 3), fill="white")
+    
+    # Ash cloud
+    ash_frame = frame % 4
+    for y in range(2):
+        for x in range(8):
+            if (x + y + ash_frame) % 3 == 0:
+                draw.point((x, y), fill="white")
+    
+    # Fire sparks
+    spark_frame = frame % 5
+    for i in range(3):
+        x = (spark_frame + i * 2) % 8
+        y = 1 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+
+def draw_tsunami_animation(draw, frame):
+    """Draw tsunami wave animation - massive wave"""
+    # Tsunami wave
+    wave_frame = frame % 8
+    if wave_frame < 4:
+        # Wave building up
+        for i in range(wave_frame + 1):
+            y = 4 + i
+            for x in range(8):
+                draw.point((x, y), fill="white")
+    else:
+        # Full wave
+        for y in range(4, 8):
+            for x in range(8):
+                draw.point((x, y), fill="white")
+        # Wave crest
+        for x in range(8):
+            draw.point((x, 3), fill="white")
+    
+    # Water droplets
+    droplet_frame = frame % 6
+    for i in range(4):
+        x = (droplet_frame + i * 2) % 8
+        y = 2 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+    
+    # Foam
+    foam_frame = frame % 4
+    for i in range(3):
+        x = (foam_frame + i * 2) % 8
+        y = 7
+        if x < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+
+def draw_earthquake_animation(draw, frame):
+    """Draw earthquake animation - shaking ground"""
+    # Shaking ground
+    shake_frame = frame % 4
+    ground_y = 6 + (shake_frame % 2)
+    for x in range(8):
+        draw.point((x, ground_y), fill="white")
+        if ground_y < 7:
+            draw.point((x, ground_y + 1), fill="white")
+    
+    # Cracks in ground
+    crack_frame = frame % 6
+    for i in range(3):
+        x = (crack_frame + i * 2) % 8
+        y = 5 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+    
+    # Shaking buildings
+    building_frame = frame % 3
+    for i in range(2):
+        x = 1 + i * 4 + (building_frame % 2)
+        for y in range(3, 6):
+            if x < 8 and y < 8:
+                draw.point((x, y), fill="white")
+                if x < 7:
+                    draw.point((x + 1, y), fill="white")
+    
+    # Dust particles
+    dust_frame = frame % 5
+    for i in range(4):
+        x = (dust_frame + i * 2) % 8
+        y = 2 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+
+def draw_cyclone_animation(draw, frame):
+    """Draw cyclone animation - spinning storm"""
+    # Cyclone center
+    draw.point((3, 3), fill="white")
+    draw.point((4, 3), fill="white")
+    draw.point((3, 4), fill="white")
+    draw.point((4, 4), fill="white")
+    
+    # Spinning arms
+    spin_frame = frame % 8
+    for i in range(4):
+        angle = (spin_frame + i * 2) % 8
+        if angle < 4:
+            x = 3 + angle
+            y = 3 + i
+        else:
+            x = 3 - (angle - 4)
+            y = 3 + i
+        if 0 <= x < 8 and 0 <= y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7 and y < 7:
+                draw.point((x + 1, y), fill="white")
+                draw.point((x, y + 1), fill="white")
+    
+    # Outer storm clouds
+    cloud_frame = frame % 6
+    for i in range(3):
+        x = (cloud_frame + i * 2) % 8
+        y = 1 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+    
+    # Wind lines
+    wind_frame = frame % 4
+    for i in range(2):
+        x = (wind_frame + i * 3) % 8
+        y = 6 + i
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+
+def draw_ice_storm_animation(draw, frame):
+    """Draw ice storm animation - freezing rain and ice"""
+    # Ice storm cloud
+    draw.point((0, 0), fill="white")
+    draw.point((1, 0), fill="white")
+    draw.point((2, 0), fill="white")
+    draw.point((3, 0), fill="white")
+    draw.point((4, 0), fill="white")
+    draw.point((5, 0), fill="white")
+    draw.point((6, 0), fill="white")
+    draw.point((7, 0), fill="white")
+    draw.point((1, 1), fill="white")
+    draw.point((2, 1), fill="white")
+    draw.point((3, 1), fill="white")
+    draw.point((4, 1), fill="white")
+    draw.point((5, 1), fill="white")
+    draw.point((6, 1), fill="white")
+    
+    # Cold cloud face
+    draw.point((2, 0), fill="black")  # cold eye
+    draw.point((5, 0), fill="black")  # cold eye
+    draw.point((2, 1), fill="black")  # cold eye
+    draw.point((5, 1), fill="black")  # cold eye
+    # Cold mouth
+    draw.point((3, 1), fill="black")  # cold mouth
+    draw.point((4, 1), fill="black")  # cold mouth
+    
+    # Freezing rain
+    ice_frame = frame % 5
+    for i in range(4):
+        x = i * 2
+        y = 2 + (ice_frame + i) % 4
+        if y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7 and y < 7:
+                draw.point((x + 1, y), fill="white")
+                draw.point((x, y + 1), fill="white")
+                draw.point((x + 1, y + 1), fill="white")
+    
+    # Ice accumulation
+    ice_acc_frame = frame % 6
+    for i in range(3):
+        x = (ice_acc_frame + i * 2) % 8
+        y = 6 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+    
+    # Ice crystals
+    crystal_frame = frame % 4
+    for i in range(2):
+        x = (crystal_frame + i * 3) % 8
+        y = 4 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7 and y < 7:
+                draw.point((x + 1, y), fill="white")
+                draw.point((x, y + 1), fill="white")
+
+def draw_heat_burst_animation(draw, frame):
+    """Draw heat burst animation - extreme heat with distortion"""
+    # Super hot sun with fire effects
+    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
+    # Fire eyes
+    draw.point((2, 2), fill="black")  # eye
+    draw.point((5, 2), fill="black")  # eye
+    draw.point((2, 3), fill="black")  # eye
+    draw.point((5, 3), fill="black")  # eye
+    # Fire mouth
+    draw.point((1, 4), fill="black")  # mouth
+    draw.point((2, 5), fill="black")  # mouth
+    draw.point((3, 6), fill="black")  # mouth
+    draw.point((4, 6), fill="black")  # mouth
+    draw.point((5, 5), fill="black")  # mouth
+    draw.point((6, 4), fill="black")  # mouth
+    
+    # Extreme heat rays
+    heat_frame = frame % 8
+    if heat_frame < 4:
+        # Maximum heat rays
+        for x in range(8):
+            draw.point((x, 0), fill="white")
+            draw.point((x, 7), fill="white")
+        for y in range(8):
+            draw.point((0, y), fill="white")
+            draw.point((7, y), fill="white")
+    else:
+        # Pulsing heat rays
+        for x in [0, 2, 4, 6]:
+            draw.point((x, 0), fill="white")
+            draw.point((x, 7), fill="white")
+        for y in [0, 2, 4, 6]:
+            draw.point((0, y), fill="white")
+            draw.point((7, y), fill="white")
+    
+    # Heat distortion waves
+    distortion_frame = frame % 6
+    for i in range(3):
+        x = (distortion_frame + i * 2) % 8
+        y = 1 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+    
+    # Fire sparks
+    spark_frame = frame % 5
+    for i in range(4):
+        x = (spark_frame + i * 2) % 8
+        y = 2 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+
+def draw_cloudburst_animation(draw, frame):
+    """Draw cloudburst animation - sudden heavy rain"""
+    # Massive rain cloud
+    for y in range(3):
+        for x in range(8):
+            draw.point((x, y), fill="white")
+    
+    # Shocked cloud face
+    draw.point((2, 0), fill="black")  # shocked eye
+    draw.point((5, 0), fill="black")  # shocked eye
+    draw.point((2, 1), fill="black")  # shocked eye
+    draw.point((5, 1), fill="black")  # shocked eye
+    # Shocked mouth
+    draw.point((3, 1), fill="black")  # shocked mouth
+    draw.point((4, 1), fill="black")  # shocked mouth
+    
+    # Sudden heavy rain
+    rain_frame = frame % 3
+    for x in range(8):
+        for y in range(3 + rain_frame, 8):
+            draw.point((x, y), fill="white")
+    
+    # Rain splash effects
+    splash_frame = frame % 2
+    for x in range(8):
+        if splash_frame == 0:
+            draw.point((x, 7), fill="white")
+        else:
+            if x % 2 == 0:
+                draw.point((x, 7), fill="white")
+            else:
+                draw.point((x, 6), fill="white")
+    
+    # Water droplets
+    droplet_frame = frame % 4
+    for i in range(3):
+        x = (droplet_frame + i * 2) % 8
+        y = 2 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+
+def draw_dust_devil_animation(draw, frame):
+    """Draw dust devil animation - spinning dust column"""
+    # Dust devil column
+    dust_frame = frame % 8
+    for i in range(4):
+        width = 1 + i // 2
+        start_x = 3 - width // 2
+        for x in range(width):
+            y = 7 - i
+            if start_x + x < 8 and y >= 0:
+                draw.point((start_x + x, y), fill="white")
+    
+    # Spinning dust particles
+    spin_frame = frame % 6
+    for i in range(5):
+        angle = (spin_frame + i) % 8
+        if angle < 4:
+            x = 3 + angle
+            y = 3 + i // 2
+        else:
+            x = 3 - (angle - 4)
+            y = 3 + i // 2
+        if 0 <= x < 8 and 0 <= y < 8:
+            draw.point((x, y), fill="white")
+    
+    # Dust clouds
+    cloud_frame = frame % 5
+    for i in range(3):
+        x = (cloud_frame + i * 2) % 8
+        y = 1 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+    
+    # Ground dust
+    ground_frame = frame % 4
+    for i in range(4):
+        x = (ground_frame + i * 2) % 8
+        y = 6 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+
+def draw_lightning_storm_animation(draw, frame):
+    """Draw enhanced lightning storm animation - more dramatic effects"""
+    # Massive storm cloud
+    for y in range(3):
+        for x in range(8):
+            draw.point((x, y), fill="white")
+    
+    # Very angry cloud face
+    draw.point((2, 0), fill="black")  # angry eye
+    draw.point((5, 0), fill="black")  # angry eye
+    draw.point((2, 1), fill="black")  # angry eye
+    draw.point((5, 1), fill="black")  # angry eye
+    # Angry mouth
+    draw.point((1, 1), fill="black")  # angry mouth
+    draw.point((6, 1), fill="black")  # angry mouth
+    draw.point((2, 1), fill="black")  # angry mouth
+    draw.point((3, 1), fill="black")  # angry mouth
+    draw.point((4, 1), fill="black")  # angry mouth
+    draw.point((5, 1), fill="black")  # angry mouth
+    
+    # Multiple lightning bolts
+    lightning_frame = frame % 10
+    if lightning_frame < 3:
+        # Main lightning bolt
+        draw.point((3, 1), fill="white")
+        draw.point((2, 2), fill="white")
+        draw.point((3, 3), fill="white")
+        draw.point((4, 4), fill="white")
+        draw.point((3, 5), fill="white")
+        draw.point((2, 6), fill="white")
+        draw.point((3, 7), fill="white")
+    elif lightning_frame < 6:
+        # Forked lightning
+        draw.point((4, 1), fill="white")
+        draw.point((3, 2), fill="white")
+        draw.point((4, 3), fill="white")
+        draw.point((5, 4), fill="white")
+        draw.point((4, 5), fill="white")
+        draw.point((3, 6), fill="white")
+        draw.point((4, 7), fill="white")
+        # Fork
+        draw.point((2, 3), fill="white")
+        draw.point((1, 4), fill="white")
+        draw.point((0, 5), fill="white")
+    elif lightning_frame < 8:
+        # Multiple bolts
+        draw.point((2, 1), fill="white")
+        draw.point((3, 2), fill="white")
+        draw.point((2, 3), fill="white")
+        draw.point((3, 4), fill="white")
+        draw.point((2, 5), fill="white")
+        draw.point((1, 6), fill="white")
+        draw.point((2, 7), fill="white")
+        # Second bolt
+        draw.point((5, 1), fill="white")
+        draw.point((6, 2), fill="white")
+        draw.point((5, 3), fill="white")
+        draw.point((6, 4), fill="white")
+        draw.point((5, 5), fill="white")
+        draw.point((4, 6), fill="white")
+        draw.point((5, 7), fill="white")
+    else:
+        # Intense flash
+        for x in range(8):
+            for y in range(1, 8):
+                if (x + y) % 2 == 0:
+                    draw.point((x, y), fill="white")
+    
+    # Heavy rain
+    rain_frame = frame % 2
+    for x in range(8):
+        y = 3 + rain_frame
+        if y < 8:
+            draw.point((x, y), fill="white")
+            if y < 7:
+                draw.point((x, y + 1), fill="white")
+    
+    # Dramatic splash effects
+    splash_frame = frame % 3
+    for x in range(8):
+        if splash_frame == 0:
+            draw.point((x, 7), fill="white")
+        elif splash_frame == 1:
+            if x % 2 == 0:
+                draw.point((x, 7), fill="white")
+        else:
+            if x % 3 == 0:
+                draw.point((x, 7), fill="white")
+
+def draw_solar_flare_animation(draw, frame):
+    """Draw solar flare animation - cosmic effects"""
+    # Solar flare sun
+    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
+    # Cosmic eyes
+    draw.point((2, 2), fill="black")  # eye
+    draw.point((5, 2), fill="black")  # eye
+    draw.point((2, 3), fill="black")  # eye
+    draw.point((5, 3), fill="black")  # eye
+    # Cosmic smile
+    draw.point((1, 4), fill="black")  # smile
+    draw.point((2, 5), fill="black")  # smile
+    draw.point((3, 6), fill="black")  # smile
+    draw.point((4, 6), fill="black")  # smile
+    draw.point((5, 5), fill="black")  # smile
+    draw.point((6, 4), fill="black")  # smile
+    
+    # Solar flare rays
+    flare_frame = frame % 8
+    if flare_frame < 4:
+        # Intense flare
+        for x in range(8):
+            draw.point((x, 0), fill="white")
+            draw.point((x, 7), fill="white")
+        for y in range(8):
+            draw.point((0, y), fill="white")
+            draw.point((7, y), fill="white")
+    else:
+        # Pulsing flare
+        for x in [0, 2, 4, 6]:
+            draw.point((x, 0), fill="white")
+            draw.point((x, 7), fill="white")
+        for y in [0, 2, 4, 6]:
+            draw.point((0, y), fill="white")
+            draw.point((7, y), fill="white")
+    
+    # Cosmic particles
+    particle_frame = frame % 6
+    for i in range(4):
+        x = (particle_frame + i * 2) % 8
+        y = 1 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7 and y < 7:
+                draw.point((x + 1, y), fill="white")
+                draw.point((x, y + 1), fill="white")
+    
+    # Solar wind
+    wind_frame = frame % 5
+    for i in range(3):
+        x = (wind_frame + i * 2) % 8
+        y = 2 + (i % 2)
+        if x < 8 and y < 8:
+            draw.point((x, y), fill="white")
+            if x < 7:
+                draw.point((x + 1, y), fill="white")
+
 def draw_weather_animation(temperature_avg, pop_avg, frame):
     """Draw weather animation based on temperature and precipitation with more detailed conditions"""
     current_hour = datetime.now().hour
@@ -1211,50 +2104,150 @@ def draw_weather_animation(temperature_avg, pop_avg, frame):
     device.contrast(brightness)
     
     with canvas(device) as draw:
-        # More detailed weather condition detection
-        if temperature_avg <= 5:
+        # Special weather conditions (rare but dramatic)
+        special_weather = frame % 100  # 1% chance for special weather
+        
+        # Extreme weather conditions
+        if temperature_avg <= -10:
             # Extremely cold - show blizzard
             draw_blizzard_animation(draw, frame)
-        elif temperature_avg <= 15:
-            # Very cold - show snow with variations
-            if pop_avg >= 70:
+        elif temperature_avg <= -5:
+            # Very cold - show ice storm
+            draw_ice_storm_animation(draw, frame)
+        elif temperature_avg <= 0:
+            # Freezing - show heavy snow
+            if pop_avg >= 80:
                 draw_heavy_snow_animation(draw, frame)
             else:
                 draw_snowy_animation(draw, frame)
-        elif temperature_avg <= 20:
-            # Cool weather - show overcast or light rain
+        elif temperature_avg <= 5:
+            # Very cold - show snow with variations
+            if pop_avg >= 70:
+                draw_heavy_snow_animation(draw, frame)
+            elif pop_avg >= 50:
+                draw_hail_animation(draw, frame)
+            else:
+                draw_snowy_animation(draw, frame)
+        elif temperature_avg <= 10:
+            # Cold weather - show foggy or overcast
             if pop_avg >= 80:
                 draw_heavy_rain_animation(draw, frame)
-            elif pop_avg >= 50:
-                draw_rainy_animation(draw, frame)
-            else:
-                draw_overcast_animation(draw, frame)
-        elif temperature_avg <= 25:
-            # Mild weather - show partly cloudy or light rain
-            if pop_avg >= 80:
-                draw_thunderstorm_animation(draw, frame)
             elif pop_avg >= 60:
                 draw_rainy_animation(draw, frame)
             elif pop_avg >= 30:
-                draw_partly_cloudy_animation(draw, frame)
+                draw_foggy_animation(draw, frame)
             else:
-                draw_cloudy_animation(draw, frame)
-        elif temperature_avg <= 30:
-            # Warm weather - show sunny or light clouds
-            if pop_avg >= 70:
+                draw_overcast_animation(draw, frame)
+        elif temperature_avg <= 15:
+            # Cool weather - show overcast or light rain
+            if pop_avg >= 80:
+                draw_heavy_rain_animation(draw, frame)
+            elif pop_avg >= 60:
+                draw_rainy_animation(draw, frame)
+            elif pop_avg >= 40:
+                draw_foggy_animation(draw, frame)
+            else:
+                draw_overcast_animation(draw, frame)
+        elif temperature_avg <= 20:
+            # Mild cool weather
+            if pop_avg >= 90:
+                draw_cloudburst_animation(draw, frame)
+            elif pop_avg >= 80:
+                draw_thunderstorm_animation(draw, frame)
+            elif pop_avg >= 60:
                 draw_rainy_animation(draw, frame)
             elif pop_avg >= 40:
                 draw_partly_cloudy_animation(draw, frame)
             else:
-                draw_sunny_animation(draw, frame)
-        else:
-            # Hot weather - show bright sun or heat wave
-            if pop_avg >= 60:
+                draw_cloudy_animation(draw, frame)
+        elif temperature_avg <= 25:
+            # Mild weather - show partly cloudy or light rain
+            if pop_avg >= 90:
+                draw_cloudburst_animation(draw, frame)
+            elif pop_avg >= 80:
+                draw_lightning_storm_animation(draw, frame)
+            elif pop_avg >= 60:
                 draw_rainy_animation(draw, frame)
-            elif temperature_avg >= 35:
-                draw_heat_wave_animation(draw, frame)
+            elif pop_avg >= 40:
+                draw_partly_cloudy_animation(draw, frame)
+            elif pop_avg >= 20:
+                draw_windy_animation(draw, frame)
+            else:
+                draw_cloudy_animation(draw, frame)
+        elif temperature_avg <= 30:
+            # Warm weather - show sunny or light clouds
+            if pop_avg >= 90:
+                draw_cloudburst_animation(draw, frame)
+            elif pop_avg >= 70:
+                draw_rainy_animation(draw, frame)
+            elif pop_avg >= 50:
+                draw_partly_cloudy_animation(draw, frame)
+            elif pop_avg >= 30:
+                draw_windy_animation(draw, frame)
             else:
                 draw_sunny_animation(draw, frame)
+        elif temperature_avg <= 35:
+            # Hot weather - show bright sun or heat effects
+            if pop_avg >= 80:
+                draw_rainy_animation(draw, frame)
+            elif pop_avg >= 60:
+                draw_partly_cloudy_animation(draw, frame)
+            elif pop_avg >= 40:
+                draw_windy_animation(draw, frame)
+            elif temperature_avg >= 33:
+                draw_heat_burst_animation(draw, frame)
+            else:
+                draw_sunny_animation(draw, frame)
+        else:
+            # Very hot weather - show extreme heat
+            if pop_avg >= 70:
+                draw_rainy_animation(draw, frame)
+            elif temperature_avg >= 40:
+                draw_heat_burst_animation(draw, frame)
+            else:
+                draw_heat_wave_animation(draw, frame)
+        
+        # Special weather conditions (rare but dramatic)
+        if special_weather == 0:
+            # Rainbow (after rain)
+            if pop_avg >= 50 and temperature_avg >= 15:
+                draw_rainbow_animation(draw, frame)
+        elif special_weather == 1:
+            # Aurora borealis (very rare, cold weather)
+            if temperature_avg <= 5:
+                draw_aurora_animation(draw, frame)
+        elif special_weather == 2:
+            # Meteor shower (very rare)
+            draw_meteor_animation(draw, frame)
+        elif special_weather == 3:
+            # Solar flare (very rare, hot weather)
+            if temperature_avg >= 30:
+                draw_solar_flare_animation(draw, frame)
+        elif special_weather == 4:
+            # Tornado (rare, stormy weather)
+            if pop_avg >= 80 and 15 <= temperature_avg <= 30:
+                draw_tornado_animation(draw, frame)
+        elif special_weather == 5:
+            # Cyclone (rare, stormy weather)
+            if pop_avg >= 85 and 20 <= temperature_avg <= 35:
+                draw_cyclone_animation(draw, frame)
+        elif special_weather == 6:
+            # Sandstorm (rare, hot dry weather)
+            if temperature_avg >= 35 and pop_avg <= 20:
+                draw_sandstorm_animation(draw, frame)
+        elif special_weather == 7:
+            # Dust devil (rare, hot dry weather)
+            if temperature_avg >= 30 and pop_avg <= 30:
+                draw_dust_devil_animation(draw, frame)
+        elif special_weather == 8:
+            # Volcano eruption (very rare)
+            draw_volcano_animation(draw, frame)
+        elif special_weather == 9:
+            # Tsunami (very rare)
+            draw_tsunami_animation(draw, frame)
+        elif special_weather == 10:
+            # Earthquake (very rare)
+            draw_earthquake_animation(draw, frame)
 
 def draw_digit(draw, digit, x_offset, y_offset):
     """Draw a single digit (0-9) in 3x5 pixel font"""
