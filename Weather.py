@@ -94,90 +94,139 @@ def get_weather_forecast(TODAY_Date):
         # 獲取溫度資料
         response_temp = requests.get(url_temp, verify=False, timeout=10)
         data_temp = response_temp.json()
-        T_data = data_temp["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-        print("Temperature data:", T_data)
+        
+        # 檢查溫度資料是否有效
+        if (data_temp.get("success") == "true" and 
+            "records" in data_temp and 
+            "Locations" in data_temp["records"] and 
+            len(data_temp["records"]["Locations"]) > 0 and
+            "Location" in data_temp["records"]["Locations"][0] and
+            len(data_temp["records"]["Locations"][0]["Location"]) > 0):
+            
+            T_data = data_temp["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+            print("Temperature data:", T_data)
+        else:
+            print("Temperature API returned empty data, using fallback")
+            # 使用預設溫度資料
+            T_data = [{'ElementValue': [{'Temperature': '22'}]} for _ in range(8)]
         
         # 獲取降雨機率資料
         response_pop = requests.get(url_pop, verify=False, timeout=10)
         data_pop = response_pop.json()
         print("Full PoP API response:", data_pop)
         
-        # 檢查是否成功獲取降雨機率資料
-        try:
-            PoPdata = data_pop["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-            print("Precipitation data:", PoPdata)
+        # 檢查降雨機率資料是否有效
+        PoPdata = None
+        if (data_pop.get("success") == "true" and 
+            "records" in data_pop and 
+            "Locations" in data_pop["records"] and 
+            len(data_pop["records"]["Locations"]) > 0 and
+            "Location" in data_pop["records"]["Locations"][0] and
+            len(data_pop["records"]["Locations"][0]["Location"]) > 0):
             
-            # 檢查是否真的包含降雨機率資料
-            has_precipitation_data = False
-            for d in PoPdata:
-                element_value = d['ElementValue'][0]
-                if any(key in element_value for key in ['PoP6h', 'PoP', 'Precipitation']):
-                    has_precipitation_data = True
-                    break
-            
-            if not has_precipitation_data:
-                print("Warning: PoP6h API returned no precipitation data, trying alternative endpoint...")
-                # 嘗試備用API
-                response_pop_alt = requests.get(url_pop_alt, verify=False, timeout=10)
-                data_pop_alt = response_pop_alt.json()
-                print("Alternative PoP API response:", data_pop_alt)
-                PoPdata = data_pop_alt["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-                print("Alternative precipitation data:", PoPdata)
+            try:
+                PoPdata = data_pop["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+                print("Precipitation data:", PoPdata)
                 
-        except (KeyError, IndexError) as e:
-            print(f"Error accessing precipitation data: {e}")
-            print("Trying alternative endpoint...")
+                # 檢查是否真的包含降雨機率資料
+                has_precipitation_data = False
+                for d in PoPdata:
+                    element_value = d['ElementValue'][0]
+                    if any(key in element_value for key in ['PoP6h', 'PoP', 'Precipitation']):
+                        has_precipitation_data = True
+                        break
+                
+                if not has_precipitation_data:
+                    print("Warning: PoP6h API returned no precipitation data, trying alternative endpoint...")
+                    # 嘗試備用API
+                    response_pop_alt = requests.get(url_pop_alt, verify=False, timeout=10)
+                    data_pop_alt = response_pop_alt.json()
+                    print("Alternative PoP API response:", data_pop_alt)
+                    
+                    if (data_pop_alt.get("success") == "true" and 
+                        "records" in data_pop_alt and 
+                        "Locations" in data_pop_alt["records"] and 
+                        len(data_pop_alt["records"]["Locations"]) > 0 and
+                        "Location" in data_pop_alt["records"]["Locations"][0] and
+                        len(data_pop_alt["records"]["Locations"][0]["Location"]) > 0):
+                        PoPdata = data_pop_alt["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+                        print("Alternative precipitation data:", PoPdata)
+                    else:
+                        print("Alternative API also returned empty data")
+                        PoPdata = None
+                        
+            except (KeyError, IndexError) as e:
+                print(f"Error accessing precipitation data: {e}")
+                PoPdata = None
+        else:
+            print("PoP API returned empty data, trying alternative endpoint...")
             # 嘗試備用API
             response_pop_alt = requests.get(url_pop_alt, verify=False, timeout=10)
             data_pop_alt = response_pop_alt.json()
             print("Alternative PoP API response:", data_pop_alt)
-            PoPdata = data_pop_alt["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-            print("Alternative precipitation data:", PoPdata)
+            
+            if (data_pop_alt.get("success") == "true" and 
+                "records" in data_pop_alt and 
+                "Locations" in data_pop_alt["records"] and 
+                len(data_pop_alt["records"]["Locations"]) > 0 and
+                "Location" in data_pop_alt["records"]["Locations"][0] and
+                len(data_pop_alt["records"]["Locations"][0]["Location"]) > 0):
+                PoPdata = data_pop_alt["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+                print("Alternative precipitation data:", PoPdata)
+            else:
+                print("Alternative API also returned empty data")
+                PoPdata = None
         
         # 從資料中提取出每個時間段的數值
         TDataList = [list(d['ElementValue'][0].values())[0] for d in T_data]
-        print("Raw PoP data structure:", [d['ElementValue'] for d in PoPdata])
-        print("Available field names in PoP data:", [list(d['ElementValue'][0].keys()) for d in PoPdata])
-        
-        # Fix: Extract precipitation data correctly
-        # The precipitation data should have a different field name than temperature
-        PopDataList = []
-        for d in PoPdata:
-            element_value = d['ElementValue'][0]
-            print(f"Processing element value: {element_value}")
-            
-            # Look for precipitation-related field names
-            if 'PoP6h' in element_value:
-                PopDataList.append(element_value['PoP6h'])
-                print(f"Found PoP6h data: {element_value['PoP6h']}")
-            elif 'PoP' in element_value:
-                PopDataList.append(element_value['PoP'])
-                print(f"Found PoP data: {element_value['PoP']}")
-            elif 'Precipitation' in element_value:
-                PopDataList.append(element_value['Precipitation'])
-                print(f"Found Precipitation data: {element_value['Precipitation']}")
-            else:
-                # If no precipitation field found, check if it's temperature data
-                if 'Temperature' in element_value:
-                    print(f"Warning: API returned temperature data instead of precipitation data: {element_value}")
-                    print("This indicates the API endpoint may be incorrect or the data structure has changed")
-                    # Use a default precipitation value based on temperature (rough estimation)
-                    temp_value = int(element_value['Temperature'])
-                    if temp_value > 30:
-                        PopDataList.append('20')  # Low chance of rain for hot weather
-                    elif temp_value > 25:
-                        PopDataList.append('30')  # Medium-low chance
-                    elif temp_value > 20:
-                        PopDataList.append('40')  # Medium chance
-                    else:
-                        PopDataList.append('60')  # Higher chance for cooler weather
-                    print(f"Using estimated precipitation value: {PopDataList[-1]}")
-                else:
-                    # If no precipitation field found, use default value (0% chance)
-                    print(f"Warning: No precipitation data found in {element_value}, using default value 0")
-                    PopDataList.append('0')
-        
         print("Temperature values:", TDataList)
+        
+        # 處理降雨機率資料
+        PopDataList = []
+        if PoPdata:
+            print("Raw PoP data structure:", [d['ElementValue'] for d in PoPdata])
+            print("Available field names in PoP data:", [list(d['ElementValue'][0].keys()) for d in PoPdata])
+            
+            # Fix: Extract precipitation data correctly
+            for d in PoPdata:
+                element_value = d['ElementValue'][0]
+                print(f"Processing element value: {element_value}")
+                
+                # Look for precipitation-related field names
+                if 'PoP6h' in element_value:
+                    PopDataList.append(element_value['PoP6h'])
+                    print(f"Found PoP6h data: {element_value['PoP6h']}")
+                elif 'PoP' in element_value:
+                    PopDataList.append(element_value['PoP'])
+                    print(f"Found PoP data: {element_value['PoP']}")
+                elif 'Precipitation' in element_value:
+                    PopDataList.append(element_value['Precipitation'])
+                    print(f"Found Precipitation data: {element_value['Precipitation']}")
+                else:
+                    # If no precipitation field found, check if it's temperature data
+                    if 'Temperature' in element_value:
+                        print(f"Warning: API returned temperature data instead of precipitation data: {element_value}")
+                        print("This indicates the API endpoint may be incorrect or the data structure has changed")
+                        # Use a default precipitation value based on temperature (rough estimation)
+                        temp_value = int(element_value['Temperature'])
+                        if temp_value > 30:
+                            PopDataList.append('20')  # Low chance of rain for hot weather
+                        elif temp_value > 25:
+                            PopDataList.append('30')  # Medium-low chance
+                        elif temp_value > 20:
+                            PopDataList.append('40')  # Medium chance
+                        else:
+                            PopDataList.append('60')  # Higher chance for cooler weather
+                        print(f"Using estimated precipitation value: {PopDataList[-1]}")
+                    else:
+                        # If no precipitation field found, use default value (0% chance)
+                        print(f"Warning: No precipitation data found in {element_value}, using default value 0")
+                        PopDataList.append('0')
+        else:
+            print("No precipitation data available, using fallback values")
+            # 使用預設降雨機率資料
+            PopDataList = ['20', '30', '25', '35', '40', '30', '25', '20']
+        
         print("Precipitation values:", PopDataList)
         
         return temperature_to_led_levels(TDataList), PoP_to_led_levels(PopDataList)
@@ -2627,12 +2676,34 @@ while 1:
                 if not T_data_raw:
                     response_t = requests.get(url_temp, verify=False, timeout=5)
                     data_t = response_t.json()
-                    T_data_raw = [list(d['ElementValue'][0].values())[0] for d in data_t["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"][:8]]
+                    
+                    # Check if temperature data is valid
+                    if (data_t.get("success") == "true" and 
+                        "records" in data_t and 
+                        "Locations" in data_t["records"] and 
+                        len(data_t["records"]["Locations"]) > 0 and
+                        "Location" in data_t["records"]["Locations"][0] and
+                        len(data_t["records"]["Locations"][0]["Location"]) > 0):
+                        T_data_raw = [list(d['ElementValue'][0].values())[0] for d in data_t["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"][:8]]
+                    else:
+                        print("Temperature API returned empty data for ticker, using fallback")
+                        T_data_raw = ['22', '23', '24', '25', '24', '23', '22', '21']
                 
                 if not PoP_data_raw:
                     response_p = requests.get(url_pop, verify=False, timeout=5)
                     data_p = response_p.json()
-                    PoP_data_raw = [list(d['ElementValue'][0].values())[0] for d in data_p["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"][:4]]
+                    
+                    # Check if precipitation data is valid
+                    if (data_p.get("success") == "true" and 
+                        "records" in data_p and 
+                        "Locations" in data_p["records"] and 
+                        len(data_p["records"]["Locations"]) > 0 and
+                        "Location" in data_p["records"]["Locations"][0] and
+                        len(data_p["records"]["Locations"][0]["Location"]) > 0):
+                        PoP_data_raw = [list(d['ElementValue'][0].values())[0] for d in data_p["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"][:4]]
+                    else:
+                        print("Precipitation API returned empty data for ticker, using fallback")
+                        PoP_data_raw = ['20', '30', '25', '35']
                 
                 display_ticker(T_data_raw, PoP_data_raw, ticker_scroll)
                 ticker_scroll += 1
@@ -2641,8 +2712,15 @@ while 1:
                     
             except Exception as e:
                 print(f"Ticker error: {e}")
-                # Fallback to animation if ticker fails
-                carousel_mode = MODE_ANIMATION
+                # Use fallback data instead of switching modes
+                if not T_data_raw:
+                    T_data_raw = ['22', '23', '24', '25', '24', '23', '22', '21']
+                if not PoP_data_raw:
+                    PoP_data_raw = ['20', '30', '25', '35']
+                display_ticker(T_data_raw, PoP_data_raw, ticker_scroll)
+                ticker_scroll += 1
+                if ticker_scroll > TICKER_FULL_CYCLE:
+                    ticker_scroll = TICKER_FULL_CYCLE
                 
             time.sleep(0.2)  # Smoother scrolling for better readability
             
