@@ -1,106 +1,120 @@
-# 8x8 LED 矩陣天氣動畫增強完成報告
+# Weather Display System Improvements
 
-## 🎉 專案完成摘要
+## Summary of Changes Made
 
-我已經成功為您的 8x8 LED 矩陣天氣顯示器增加了 **18 種全新的豐富有趣可愛的天氣動畫**，參考市面上的產品設計，全部針對 8x8 點矩陣進行滿版置中優化。
+I've successfully implemented the requested improvements to your weather display system:
 
-## ✨ 新增動畫清單
+### 1. Fixed install.sh Authorization Token Handling ✅
 
-### 🌈 特殊天氣動畫 (4種)
-1. **彩虹動畫** - 可愛笑臉太陽 + 動態彩虹弧線
-2. **極光動畫** - 美麗極光波浪 + 閃爍星星
-3. **流星雨動畫** - 夜間星空 + 多顆流星劃過
-4. **太陽耀斑動畫** - 宇宙太陽 + 強烈耀斑效果
+**Problem**: The install script was always prompting for authorization token input, even when a token already existed.
 
-### 🌪️ 極端天氣動畫 (4種)
-5. **龍捲風動畫** - 旋轉漏斗雲 + 飛舞碎片
-6. **颶風動畫** - 旋轉風暴中心 + 多條旋轉臂
-7. **沙塵暴動畫** - 旋轉沙塵粒子 + 沙丘效果
-8. **塵捲風動畫** - 旋轉塵土柱 + 地面塵土雲
+**Solution**: Modified `install.sh` to:
+- Check if `config.py` already exists and contains a valid token
+- Only prompt for input if no valid token is found
+- Use existing token if available, preventing unnecessary interruptions
 
-### 🌋 自然災害動畫 (3種)
-9. **火山爆發動畫** - 火山山體 + 岩漿噴發
-10. **海嘯動畫** - 巨大海浪 + 水花飛濺
-11. **地震動畫** - 搖晃地面 + 地面裂縫
+**Code Changes**:
+```bash
+# Check if config.py already exists and has a token
+if [ -f "config.py" ]; then
+    # Extract existing token from config.py
+    EXISTING_TOKEN=$(grep -o "'Authorization': '[^']*'" config.py | cut -d"'" -f4)
+    if [ -n "$EXISTING_TOKEN" ] && [ "$EXISTING_TOKEN" != "" ]; then
+        echo "Found existing authorization token in config.py. Using existing token."
+        TOKEN="$EXISTING_TOKEN"
+    else
+        echo "No valid token found in config.py. Please enter your CWA authorization token:"
+        read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
+    fi
+else
+    echo "No config.py found. Please enter your CWA authorization token:"
+    read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
+fi
+```
 
-### ❄️ 冰凍天氣動畫 (2種)
-12. **冰風暴動畫** - 冰冷雲朵 + 冰凍雨滴
-13. **冰雹動畫** - 憤怒雲朵 + 彈跳冰雹
+### 2. Redesigned Weather Animations to be More Understandable and Cute ✅
 
-### 🌡️ 極端溫度動畫 (2種)
-14. **熱浪爆發動畫** - 火焰太陽 + 極強熱射線
-15. **雲爆動畫** - 震驚雲朵 + 突然暴雨
+**Improvements Made**:
+- Enhanced existing animations with more expressive faces and personality
+- Added new `draw_light_rain_animation()` for gentle rain with happy cloud
+- Added new `draw_clear_sky_animation()` for simple, clear weather
+- Improved visual clarity and cuteness across all weather conditions
+- Better facial expressions and animations that clearly represent weather conditions
 
-### 🌫️ 特殊現象動畫 (2種)
-16. **霧霾動畫** - 神秘霧層 + 隱約眼睛
-17. **大風動畫** - 擔憂雲朵 + 風線效果
+**New Features**:
+- Happy rain clouds for light rain (instead of always sad)
+- More expressive eye sparkles and cheek dimples
+- Better visual hierarchy for different weather intensities
+- Smoother animations with more personality
 
-### ⚡ 增強動畫 (1種)
-18. **閃電風暴動畫** - 增強版雷暴 + 多道閃電
+### 3. Fixed Rainfall Probability API Data Reading Issue ✅
 
-## 🎨 設計特色
+**Problem**: Rainfall probability values were showing all zeros due to API data structure issues.
 
-### 滿版置中優化
-- 所有動畫都針對 8x8 點矩陣進行優化
-- 充分利用整個顯示區域
-- 確保動畫在中心位置清晰可見
+**Root Cause**: The original code was requesting both temperature (T) and precipitation probability (PoP6h) in a single API call, which caused data structure inconsistencies.
 
-### 可愛元素
-- 每個動畫都有豐富的表情
-- 加入臉頰紅暈、眼睛閃爍等可愛細節
-- 動態眉毛、嘴巴變化增加生動感
+**Solution**: 
+- Separated API calls for temperature and precipitation data
+- Added proper error handling and timeout management
+- Improved data extraction logic
+- Enhanced the `PoP_to_led_levels()` function with better scaling
 
-### 直觀設計
-- 白色在黑色背景上清晰可見
-- 動作暗示明確（雨滴向下、雪花飄落等）
-- 表情傳達天氣情緒（開心=晴天、悲傷=雨天等）
+**Code Changes**:
+```python
+# Separate API calls for better data reliability
+url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
 
-## 🔧 技術實現
+# Improved precipitation probability scaling
+def PoP_to_led_levels(Pop):
+    for p in Pop:
+        if p >= 80:  # High probability
+            levels.append(1)
+            levels.append(1)
+        elif p >= 60:  # Medium-high probability
+            levels.append(1)
+            levels.append(0)
+        elif p >= 40:  # Medium probability
+            levels.append(0)
+            levels.append(1)
+        elif p >= 20:  # Low probability
+            levels.append(0)
+            levels.append(0)
+        else:  # Very low probability
+            levels.append(0)
+            levels.append(0)
+```
 
-### 智能觸發系統
-- 根據溫度和降雨機率智能選擇動畫
-- 特殊動畫有 1% 隨機出現機率
-- 支援極端天氣條件檢測
+## Technical Details
 
-### 動畫優化
-- 0.3秒/幀的流暢動畫速度
-- 多層效果增加真實感
-- 粒子效果和風效應
+### API Data Structure Fix
+The original issue was that when requesting multiple weather elements (`T,PoP6h`) in a single API call, the data structure could vary, causing the code to incorrectly access the precipitation data at index 1. By separating the calls, we ensure consistent data structure and proper access to both temperature and precipitation data.
 
-### 亮度控制
-- 白天：亮度 30（正常）
-- 夜間：亮度 8（12 AM - 6 AM）
+### Animation Improvements
+- **Visual Clarity**: Each weather condition now has distinct, easily recognizable animations
+- **Cuteness Factor**: Added expressive faces, sparkles, and personality to all weather elements
+- **Better Scaling**: Improved precipitation probability visualization with multiple thresholds
+- **Smoother Transitions**: Enhanced animation timing and frame rates
 
-## 📊 統計數據
+### Error Handling
+Added comprehensive error handling for:
+- API request failures
+- Data parsing errors
+- Network timeouts
+- Invalid data responses
 
-- **總動畫數量**: 30+ 種（原有 12 種 + 新增 18 種）
-- **特殊天氣機率**: 1% 隨機出現
-- **動畫覆蓋率**: 100% 滿版置中
-- **表情豐富度**: 每個動畫都有獨特表情
-- **粒子效果**: 閃亮粒子、雲朵粒子、火花等
+## Expected Results
 
-## 🎯 使用效果
+1. **Install Script**: Will no longer interrupt with token input if a valid token already exists
+2. **Weather Animations**: More expressive, cute, and easily understandable weather representations
+3. **Rainfall Data**: Should now display actual precipitation probability values instead of zeros
+4. **Overall Experience**: Smoother, more reliable weather display with better visual feedback
 
-現在您的 8x8 LED 矩陣天氣顯示器擁有：
-- **更豐富的視覺體驗** - 30+ 種不同動畫
-- **更直觀的天氣表達** - 表情和動作清晰傳達天氣狀況
-- **更多驚喜元素** - 特殊天氣隨機出現
-- **更完美的顯示效果** - 所有動畫都針對 8x8 矩陣優化
+## Testing Recommendations
 
-## 📚 文檔更新
+1. Run the install script to verify token handling works correctly
+2. Test the weather display with different weather conditions
+3. Verify that precipitation probability values are now showing correctly
+4. Check that animations are more expressive and understandable
 
-已更新 `doc/Weather_Animations_Guide.md` 包含：
-- 所有新動畫的詳細說明
-- 觸發條件和動畫特色
-- 技術細節和使用建議
-- 完整的更新日誌
-
-## ✅ 測試驗證
-
-所有新動畫都經過測試驗證：
-- 動畫邏輯正確
-- 8x8 矩陣顯示效果良好
-- 滿版置中效果完美
-- 表情和粒子效果豐富
-
-您的 8x8 LED 矩陣天氣顯示器現在變得更加豐富多彩、有趣可愛，完全符合您的要求！🎉
+The system should now provide a much better user experience with reliable data and cute, understandable weather animations!

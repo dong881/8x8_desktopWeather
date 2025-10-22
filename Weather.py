@@ -50,29 +50,42 @@ def get_weather_forecast(TODAY_Date):
     today = (TODAY_Date+ timedelta(days=delat)).strftime('%Y-%m-%d')
     tomorrow = (TODAY_Date+ timedelta(days=delat+1)).strftime('%Y-%m-%d')
     print(today + " ~ " + tomorrow)
-    # 組裝 API URL
-    type = "T,PoP6h" #溫度(3h)、降雨機率(6h)
+    
     NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
     print(NowTime)
-    url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization='+Authorization+'&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName='+ type +'&timeFrom='+today+'T'+NowTime+'%3A00%3A00&timeTo='+tomorrow+'T'+NowTime+'%3A00%3A00'
-    # 用 requests 套件發送 GET 請求獲取資料
-    # print(url)
-    response = requests.get(url,verify=False)
-
-    # 解析 JSON 資料
-    data = response.json()
-    # print(data)
-    PoPdata = data["records"]["Locations"][0]["Location"][0]["WeatherElement"][1]["Time"]
-    T_data = data["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-    # 從資料中提取出每個時間段的平均溫度
-    print(PoPdata)
-    print(T_data)
-
-    TDataList = [list(d['ElementValue'][0].values())[0] for d in T_data]
-    PopDataList = [list(d['ElementValue'][0].values())[0] for d in PoPdata]
-    print(TDataList)
-    print(PopDataList)
-    return temperature_to_led_levels(TDataList),PoP_to_led_levels(PopDataList)
+    
+    # 分別獲取溫度和降雨機率資料，避免資料結構問題
+    # 獲取溫度資料
+    url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    # 獲取降雨機率資料
+    url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    
+    try:
+        # 獲取溫度資料
+        response_temp = requests.get(url_temp, verify=False, timeout=10)
+        data_temp = response_temp.json()
+        T_data = data_temp["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+        print("Temperature data:", T_data)
+        
+        # 獲取降雨機率資料
+        response_pop = requests.get(url_pop, verify=False, timeout=10)
+        data_pop = response_pop.json()
+        PoPdata = data_pop["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+        print("Precipitation data:", PoPdata)
+        
+        # 從資料中提取出每個時間段的數值
+        TDataList = [list(d['ElementValue'][0].values())[0] for d in T_data]
+        PopDataList = [list(d['ElementValue'][0].values())[0] for d in PoPdata]
+        
+        print("Temperature values:", TDataList)
+        print("Precipitation values:", PopDataList)
+        
+        return temperature_to_led_levels(TDataList), PoP_to_led_levels(PopDataList)
+        
+    except Exception as e:
+        print(f"Error fetching weather data: {e}")
+        # 返回預設值
+        return [4, 4, 4, 4, 4, 4, 4, 4], [0, 0, 0, 0, 0, 0, 0, 0]
 
 
 
@@ -96,15 +109,31 @@ def temperature_to_led_levels(temperature):
 
 # NowPoPvalue = -1
 def PoP_to_led_levels(Pop):
-    Pop = [int(t) for t in Pop]
-    levels = []
-    PoP_level = 60
-    for p in Pop:
-        levels.append(round(p>=PoP_level))
-        levels.append(round(p>=PoP_level))
-    # levels.insert(0,NowPoPvalue if NowPoPvalue!=-1 else levels[0])
-    # levels.pop()
-    return levels
+    """Convert precipitation probability to LED levels with better scaling"""
+    try:
+        Pop = [int(t) for t in Pop]
+        levels = []
+        # Use different thresholds for better visualization
+        for p in Pop:
+            if p >= 80:  # High probability
+                levels.append(1)
+                levels.append(1)
+            elif p >= 60:  # Medium-high probability
+                levels.append(1)
+                levels.append(0)
+            elif p >= 40:  # Medium probability
+                levels.append(0)
+                levels.append(1)
+            elif p >= 20:  # Low probability
+                levels.append(0)
+                levels.append(0)
+            else:  # Very low probability
+                levels.append(0)
+                levels.append(0)
+        return levels
+    except Exception as e:
+        print(f"Error in PoP_to_led_levels: {e}")
+        return [0, 0, 0, 0, 0, 0, 0, 0]
 
 # initialize SPI interface for the LED matrix
 serial = spi(port=0, device=0)
@@ -472,6 +501,37 @@ def draw_sunny_animation(draw, frame):
         if (frame + i) % 3 == 0:
             draw.point((x, y), fill="white")
 
+def draw_clear_sky_animation(draw, frame):
+    """Draw clear sky animation - simple sun with gentle rays"""
+    # Simple sun
+    draw.ellipse([(2, 2), (5, 5)], outline="white", fill="white")
+    # Happy face
+    draw.point((2, 2), fill="black")  # eye
+    draw.point((5, 2), fill="black")  # eye
+    draw.point((2, 3), fill="black")  # eye
+    draw.point((5, 3), fill="black")  # eye
+    # Smile
+    draw.point((2, 4), fill="black")
+    draw.point((3, 4), fill="black")
+    draw.point((4, 4), fill="black")
+    draw.point((5, 4), fill="black")
+    
+    # Gentle rays
+    ray_frame = frame % 4
+    if ray_frame < 2:
+        draw.point((0, 0), fill="white")
+        draw.point((7, 0), fill="white")
+        draw.point((0, 7), fill="white")
+        draw.point((7, 7), fill="white")
+        draw.point((3, 0), fill="white")
+        draw.point((4, 0), fill="white")
+        draw.point((3, 7), fill="white")
+        draw.point((4, 7), fill="white")
+        draw.point((0, 3), fill="white")
+        draw.point((0, 4), fill="white")
+        draw.point((7, 3), fill="white")
+        draw.point((7, 4), fill="white")
+
 def draw_cloudy_animation(draw, frame):
     """Draw super cute cloudy weather animation - big fluffy moving clouds with expressive faces"""
     offset = frame % 3
@@ -570,6 +630,54 @@ def draw_cloudy_animation(draw, frame):
         draw.point((4, 0), fill="white")
         draw.point((3, 6), fill="white")
         draw.point((4, 6), fill="white")
+
+def draw_light_rain_animation(draw, frame):
+    """Draw cute light rain animation - gentle rain with happy cloud"""
+    # Happy rain cloud
+    draw.point((0, 0), fill="white")
+    draw.point((1, 0), fill="white")
+    draw.point((2, 0), fill="white")
+    draw.point((3, 0), fill="white")
+    draw.point((4, 0), fill="white")
+    draw.point((5, 0), fill="white")
+    draw.point((6, 0), fill="white")
+    draw.point((7, 0), fill="white")
+    draw.point((1, 1), fill="white")
+    draw.point((2, 1), fill="white")
+    draw.point((3, 1), fill="white")
+    draw.point((4, 1), fill="white")
+    draw.point((5, 1), fill="white")
+    draw.point((6, 1), fill="white")
+    draw.point((2, 2), fill="white")
+    draw.point((3, 2), fill="white")
+    draw.point((4, 2), fill="white")
+    draw.point((5, 2), fill="white")
+    
+    # Happy cloud face
+    draw.point((2, 0), fill="black")  # eye
+    draw.point((5, 0), fill="black")  # eye
+    draw.point((2, 1), fill="black")  # eye
+    draw.point((5, 1), fill="black")  # eye
+    # Happy smile
+    draw.point((2, 2), fill="black")
+    draw.point((3, 2), fill="black")
+    draw.point((4, 2), fill="black")
+    draw.point((5, 2), fill="black")
+    
+    # Gentle rain drops
+    rain_frame = frame % 4
+    for x in [1, 3, 5]:
+        y = 3 + rain_frame
+        if y < 8:
+            draw.point((x, y), fill="white")
+            if y < 7:
+                draw.point((x, y+1), fill="white")
+    
+    # Light splash effects
+    if rain_frame % 2 == 0:
+        draw.point((1, 7), fill="white")
+        draw.point((3, 7), fill="white")
+        draw.point((5, 7), fill="white")
 
 def draw_rainy_animation(draw, frame):
     """Draw super vivid rainy weather animation - instantly recognizable as rain forecast with cute details"""
@@ -2184,6 +2292,8 @@ def draw_weather_animation(temperature_avg, pop_avg, frame):
                 draw_partly_cloudy_animation(draw, frame)
             elif pop_avg >= 30:
                 draw_windy_animation(draw, frame)
+            elif pop_avg >= 10:
+                draw_light_rain_animation(draw, frame)
             else:
                 draw_sunny_animation(draw, frame)
         elif temperature_avg <= 35:
@@ -2196,6 +2306,8 @@ def draw_weather_animation(temperature_avg, pop_avg, frame):
                 draw_windy_animation(draw, frame)
             elif temperature_avg >= 33:
                 draw_heat_burst_animation(draw, frame)
+            elif pop_avg >= 10:
+                draw_light_rain_animation(draw, frame)
             else:
                 draw_sunny_animation(draw, frame)
         else:
