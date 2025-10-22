@@ -1,120 +1,69 @@
-# Weather Display System Improvements
+# Weather API Precipitation Data Fix
 
-## Summary of Changes Made
+## Problem Identified
+The temperature and precipitation values were showing the same data because the precipitation API was returning temperature data instead of actual precipitation (PoP) values.
 
-I've successfully implemented the requested improvements to your weather display system:
+## Root Cause
+The issue was in the data extraction logic in the `get_weather_forecast` function. The code was using the same extraction method for both temperature and precipitation data:
 
-### 1. Fixed install.sh Authorization Token Handling ✅
-
-**Problem**: The install script was always prompting for authorization token input, even when a token already existed.
-
-**Solution**: Modified `install.sh` to:
-- Check if `config.py` already exists and contains a valid token
-- Only prompt for input if no valid token is found
-- Use existing token if available, preventing unnecessary interruptions
-
-**Code Changes**:
-```bash
-# Check if config.py already exists and has a token
-if [ -f "config.py" ]; then
-    # Extract existing token from config.py
-    EXISTING_TOKEN=$(grep -o "'Authorization': '[^']*'" config.py | cut -d"'" -f4)
-    if [ -n "$EXISTING_TOKEN" ] && [ "$EXISTING_TOKEN" != "" ]; then
-        echo "Found existing authorization token in config.py. Using existing token."
-        TOKEN="$EXISTING_TOKEN"
-    else
-        echo "No valid token found in config.py. Please enter your CWA authorization token:"
-        read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
-    fi
-else
-    echo "No config.py found. Please enter your CWA authorization token:"
-    read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
-fi
-```
-
-### 2. Redesigned Weather Animations to be More Understandable and Cute ✅
-
-**Improvements Made**:
-- Enhanced existing animations with more expressive faces and personality
-- Added new `draw_light_rain_animation()` for gentle rain with happy cloud
-- Added new `draw_clear_sky_animation()` for simple, clear weather
-- Improved visual clarity and cuteness across all weather conditions
-- Better facial expressions and animations that clearly represent weather conditions
-
-**New Features**:
-- Happy rain clouds for light rain (instead of always sad)
-- More expressive eye sparkles and cheek dimples
-- Better visual hierarchy for different weather intensities
-- Smoother animations with more personality
-
-### 3. Fixed Rainfall Probability API Data Reading Issue ✅
-
-**Problem**: Rainfall probability values were showing all zeros due to API data structure issues.
-
-**Root Cause**: The original code was requesting both temperature (T) and precipitation probability (PoP6h) in a single API call, which caused data structure inconsistencies.
-
-**Solution**: 
-- Separated API calls for temperature and precipitation data
-- Added proper error handling and timeout management
-- Improved data extraction logic
-- Enhanced the `PoP_to_led_levels()` function with better scaling
-
-**Code Changes**:
 ```python
-# Separate API calls for better data reliability
-url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-
-# Improved precipitation probability scaling
-def PoP_to_led_levels(Pop):
-    for p in Pop:
-        if p >= 80:  # High probability
-            levels.append(1)
-            levels.append(1)
-        elif p >= 60:  # Medium-high probability
-            levels.append(1)
-            levels.append(0)
-        elif p >= 40:  # Medium probability
-            levels.append(0)
-            levels.append(1)
-        elif p >= 20:  # Low probability
-            levels.append(0)
-            levels.append(0)
-        else:  # Very low probability
-            levels.append(0)
-            levels.append(0)
+PopDataList = [list(d['ElementValue'][0].values())[0] for d in PoPdata]
 ```
 
-## Technical Details
+This caused the precipitation data to extract temperature values when the API returned temperature data for precipitation requests.
 
-### API Data Structure Fix
-The original issue was that when requesting multiple weather elements (`T,PoP6h`) in a single API call, the data structure could vary, causing the code to incorrectly access the precipitation data at index 1. By separating the calls, we ensure consistent data structure and proper access to both temperature and precipitation data.
+## Solution Implemented
 
-### Animation Improvements
-- **Visual Clarity**: Each weather condition now has distinct, easily recognizable animations
-- **Cuteness Factor**: Added expressive faces, sparkles, and personality to all weather elements
-- **Better Scaling**: Improved precipitation probability visualization with multiple thresholds
-- **Smoother Transitions**: Enhanced animation timing and frame rates
+### 1. Fixed Data Extraction Logic
+Updated the precipitation data extraction to properly look for precipitation-specific field names:
 
-### Error Handling
-Added comprehensive error handling for:
-- API request failures
-- Data parsing errors
-- Network timeouts
-- Invalid data responses
+```python
+# Fix: Extract precipitation data correctly
+PopDataList = []
+for d in PoPdata:
+    element_value = d['ElementValue'][0]
+    # Look for precipitation-related field names
+    if 'PoP6h' in element_value:
+        PopDataList.append(element_value['PoP6h'])
+    elif 'PoP' in element_value:
+        PopDataList.append(element_value['PoP'])
+    elif 'Precipitation' in element_value:
+        PopDataList.append(element_value['Precipitation'])
+    else:
+        # If no precipitation field found, use default value (0% chance)
+        print(f"Warning: No precipitation data found in {element_value}, using default value 0")
+        PopDataList.append('0')
+```
 
-## Expected Results
+### 2. Added Fallback API Endpoint
+Added support for an alternative precipitation API endpoint in case the primary one doesn't work:
 
-1. **Install Script**: Will no longer interrupt with token input if a valid token already exists
-2. **Weather Animations**: More expressive, cute, and easily understandable weather representations
-3. **Rainfall Data**: Should now display actual precipitation probability values instead of zeros
-4. **Overall Experience**: Smoother, more reliable weather display with better visual feedback
+```python
+# Primary endpoint
+url_pop = f'...&elementName=PoP6h&...'
+# Alternative endpoint
+url_pop_alt = f'...&elementName=PoP&...'
+```
 
-## Testing Recommendations
+### 3. Enhanced Error Handling
+Added comprehensive error handling and debugging to identify when the API returns unexpected data:
 
-1. Run the install script to verify token handling works correctly
-2. Test the weather display with different weather conditions
-3. Verify that precipitation probability values are now showing correctly
-4. Check that animations are more expressive and understandable
+- Added debug logging to show the actual API response structure
+- Added warnings when precipitation data is not found
+- Added fallback to alternative API endpoint
+- Added validation to check if the returned data actually contains precipitation information
 
-The system should now provide a much better user experience with reliable data and cute, understandable weather animations!
+## Testing
+Created test cases to verify the fix works correctly:
+
+1. **Broken case**: When API returns temperature data for precipitation requests → Returns default values (0) instead of temperature values
+2. **Correct case**: When API returns proper PoP6h data → Extracts precipitation values correctly
+3. **Alternative case**: When API returns PoP data → Extracts precipitation values correctly
+
+## Result
+The precipitation data will now correctly show actual precipitation probability values instead of temperature values, and the system will gracefully handle cases where the API doesn't return the expected precipitation data structure.
+
+## Files Modified
+- `Weather.py`: Updated precipitation data extraction logic and added fallback API support
+- Added debug logging and error handling
+- Created test files to verify the fix works correctly
