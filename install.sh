@@ -79,7 +79,22 @@ pip install -r requirements.txt
 
 # Step 7: Configure Weather API
 echo "Configuring Weather API..."
-read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
+# Check if config.py already exists and has a token
+if [ -f "config.py" ]; then
+    # Extract existing token from config.py
+    EXISTING_TOKEN=$(grep -o "'Authorization': '[^']*'" config.py | cut -d"'" -f4)
+    if [ -n "$EXISTING_TOKEN" ] && [ "$EXISTING_TOKEN" != "" ]; then
+        echo "Found existing authorization token in config.py. Using existing token."
+        TOKEN="$EXISTING_TOKEN"
+    else
+        echo "No valid token found in config.py. Please enter your CWA authorization token:"
+        read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
+    fi
+else
+    echo "No config.py found. Please enter your CWA authorization token:"
+    read -p "Enter your CWA (https://opendata.cwa.gov.tw/user/authkey) authorization token: " TOKEN
+fi
+
 cat > config.py << EOF
 # config.py
 WeatherAPI = {
