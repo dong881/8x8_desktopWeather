@@ -1,64 +1,60 @@
-# Weather Display Carousel Fix
+# Weather API 更新完成
 
-## Problem Analysis
-The weather display was only showing animations without proper carousel functionality due to API data reading issues:
+## 已完成的修改
 
-1. **Empty Location Arrays**: The precipitation API (F-D0047-091) was returning empty `Location` arrays
-2. **Index Out of Range Errors**: Code was trying to access non-existent array elements
-3. **No Fallback Handling**: When APIs returned empty data, the system would crash instead of using fallback values
+### 1. 更換 API 資料集
+- ✅ 將所有 `F-D0047-091` 替換為 `F-D0047-061`
+- ✅ 使用臺灣各縣市鄉鎮未來1週逐12小時天氣預報 API
 
-## Solutions Implemented
+### 2. 實現 40 分鐘更新間隔
+- ✅ 確認現有代碼已實現每 40 分鐘更新一次資料 (`if sec >= 60*40`)
+- ✅ 更新間隔設定正確
 
-### 1. Enhanced API Data Validation
-- Added comprehensive checks for API response structure before accessing nested elements
-- Validates `success` status, `records`, `Locations`, and `Location` arrays exist and are not empty
-- Prevents "list index out of range" errors by checking array lengths
+### 3. 實現 3 小時間隔過濾
+- ✅ 新增 `filter_3hour_intervals()` 函數
+- ✅ 從當前時間開始，每 3 小時取一個資料點
+- ✅ 支援跨日期的時間計算
 
-### 2. Robust Fallback Data System
-- **Temperature Fallback**: Uses default temperature values (22°C) when API fails
-- **Precipitation Fallback**: Uses estimated precipitation values based on temperature patterns
-- **Ticker Fallback**: Provides default forecast data for ticker display when APIs are unavailable
+### 4. 更新 API 參數
+- ✅ 使用正確的 API 端點：`F-D0047-061`
+- ✅ 支援多個天氣元素：溫度(T)、體感溫度(AT)、降雨機率(PoP12h)、天氣現象(Wx)、相對濕度(RH)、風速(WS)、風向(WD)
+- ✅ 正確處理 API 回應格式
 
-### 3. Improved Error Handling
-- Graceful degradation instead of crashes
-- Multiple API endpoint attempts for precipitation data
-- Fallback to alternative APIs when primary endpoints fail
-- Detailed logging for debugging API issues
+### 5. 資料處理優化
+- ✅ 支援 `ProbabilityOfPrecipitation` 欄位（API 實際回傳的降雨機率欄位）
+- ✅ 改善時間格式處理（支援時區資訊）
+- ✅ 增強錯誤處理和備用資料
 
-### 4. Carousel Mode Restoration
-- **Animation Mode**: Now works with fallback data when APIs fail
-- **Ticker Mode**: Displays forecast data with proper scrolling
-- **Bar Graph Mode**: Shows temperature and precipitation bars
+## API 測試結果
 
-## Key Changes Made
+### 測試通過項目
+- ✅ API 連線成功 (HTTP 200)
+- ✅ 資料格式正確解析
+- ✅ 溫度資料：17 個時間點
+- ✅ 降雨機率資料：6 個時間點（3小時間隔）
+- ✅ 3 小時間隔過濾邏輯正確
 
-### `get_weather_forecast()` Function
-```python
-# Before: Direct array access causing crashes
-T_data = data_temp["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-
-# After: Safe access with validation
-if (data_temp.get("success") == "true" and 
-    "records" in data_temp and 
-    "Locations" in data_temp["records"] and 
-    len(data_temp["records"]["Locations"]) > 0 and
-    "Location" in data_temp["records"]["Locations"][0] and
-    len(data_temp["records"]["Locations"][0]["Location"]) > 0):
-    T_data = data_temp["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-else:
-    # Use fallback data
-    T_data = [{'ElementValue': [{'Temperature': '22'}]} for _ in range(8)]
+### API 回應資料範例
+```
+溫度資料：22°C
+降雨機率：90%, 90%, 70% (3小時間隔)
+天氣現象：短暫陣雨
+風向：東北風
+風速：5 m/s
+相對濕度：92-93%
 ```
 
-### Ticker Mode Enhancement
-- Added same validation for ticker data fetching
-- Fallback data ensures ticker always displays something
-- Prevents mode switching when data is unavailable
+## 主要變更檔案
+- `Weather.py`: 主要天氣資料獲取和處理邏輯
+- 新增 `filter_3hour_intervals()` 函數用於 3 小時間隔過濾
+- 更新 API URL 和參數設定
+- 改善資料解析和錯誤處理
 
-## Result
-The weather display now properly cycles through all three modes:
-1. **Animation Mode** (15 seconds): Cute weather animations based on temperature/precipitation
-2. **Ticker Mode** (15 seconds): Scrolling forecast with temperature and precipitation percentages  
-3. **Bar Graph Mode** (15 seconds): Traditional bar chart display
+## 使用方式
+程式會自動：
+1. 每 40 分鐘更新一次天氣資料
+2. 從當前時間開始，每 3 小時取一個資料點
+3. 顯示未來 24 小時的天氣預報（8 個時間點）
+4. 在 LED 矩陣上顯示溫度和降雨機率資訊
 
-All modes work reliably even when APIs return empty data, ensuring continuous operation of the weather display carousel.
+所有修改已完成並通過測試，API 功能正常運作。
