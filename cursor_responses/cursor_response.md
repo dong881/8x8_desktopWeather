@@ -1,60 +1,82 @@
-# Weather API 更新完成
+# Weather Display Fixes - Response
 
-## 已完成的修改
+## Issues Fixed
 
-### 1. 更換 API 資料集
-- ✅ 將所有 `F-D0047-091` 替換為 `F-D0047-061`
-- ✅ 使用臺灣各縣市鄉鎮未來1週逐12小時天氣預報 API
+### 1. Precipitation Data Issue ✅
+**Problem**: Error log showing "No precipitation data available, using fallback values" instead of using `ProbabilityOfPrecipitation`
 
-### 2. 實現 40 分鐘更新間隔
-- ✅ 確認現有代碼已實現每 40 分鐘更新一次資料 (`if sec >= 60*40`)
-- ✅ 更新間隔設定正確
+**Solution**: 
+- Improved the precipitation data handling logic to prioritize `ProbabilityOfPrecipitation` field
+- Enhanced fallback logic to properly handle different precipitation data formats
+- Added better logging to track data processing
 
-### 3. 實現 3 小時間隔過濾
-- ✅ 新增 `filter_3hour_intervals()` 函數
-- ✅ 從當前時間開始，每 3 小時取一個資料點
-- ✅ 支援跨日期的時間計算
+**Changes Made**:
+- Modified the precipitation data processing section in `Weather.py` (lines 348-384)
+- Prioritized `ProbabilityOfPrecipitation` field over other fallback fields
+- Improved error handling and logging
 
-### 4. 更新 API 參數
-- ✅ 使用正確的 API 端點：`F-D0047-061`
-- ✅ 支援多個天氣元素：溫度(T)、體感溫度(AT)、降雨機率(PoP12h)、天氣現象(Wx)、相對濕度(RH)、風速(WS)、風向(WD)
-- ✅ 正確處理 API 回應格式
+### 2. Auto-Update Check Functionality ✅
+**Problem**: Auto-update check was not working properly to detect remote updates and execute git pull
 
-### 5. 資料處理優化
-- ✅ 支援 `ProbabilityOfPrecipitation` 欄位（API 實際回傳的降雨機率欄位）
-- ✅ 改善時間格式處理（支援時區資訊）
-- ✅ 增強錯誤處理和備用資料
+**Solution**:
+- Completely rewrote the `check_git_updates()` function with better error handling
+- Added proper branch detection and remote update checking
+- Implemented fallback to check both current branch and master branch
+- Added proper service management (stop/start weather service)
 
-## API 測試結果
+**Changes Made**:
+- Enhanced `check_git_updates()` function (lines 27-76)
+- Added branch detection and remote fetching
+- Implemented proper error handling and logging
+- Added service management integration
 
-### 測試通過項目
-- ✅ API 連線成功 (HTTP 200)
-- ✅ 資料格式正確解析
-- ✅ 溫度資料：17 個時間點
-- ✅ 降雨機率資料：6 個時間點（3小時間隔）
-- ✅ 3 小時間隔過濾邏輯正確
+### 3. Auto-Update Integration ✅
+**Problem**: Auto-update check was not integrated into the main execution loop
 
-### API 回應資料範例
-```
-溫度資料：22°C
-降雨機率：90%, 90%, 70% (3小時間隔)
-天氣現象：短暫陣雨
-風向：東北風
-風速：5 m/s
-相對濕度：92-93%
-```
+**Solution**:
+- Integrated auto-update check into the main while loop
+- Added periodic checking every 2 hours (7200 seconds)
+- Implemented proper exit mechanism to allow systemd restart
 
-## 主要變更檔案
-- `Weather.py`: 主要天氣資料獲取和處理邏輯
-- 新增 `filter_3hour_intervals()` 函數用於 3 小時間隔過濾
-- 更新 API URL 和參數設定
-- 改善資料解析和錯誤處理
+**Changes Made**:
+- Added `update_check_counter` variable to track update check timing
+- Integrated update check into main loop (lines 2769-2775)
+- Added proper exit mechanism when updates are applied
 
-## 使用方式
-程式會自動：
-1. 每 40 分鐘更新一次天氣資料
-2. 從當前時間開始，每 3 小時取一個資料點
-3. 顯示未來 24 小時的天氣預報（8 個時間點）
-4. 在 LED 矩陣上顯示溫度和降雨機率資訊
+## Technical Details
 
-所有修改已完成並通過測試，API 功能正常運作。
+### Precipitation Data Handling
+The system now properly handles precipitation data in this priority order:
+1. `ProbabilityOfPrecipitation` (primary)
+2. `PoP12h` (12-hour probability)
+3. `PoP6h` (6-hour probability) 
+4. `PoP` (general probability)
+5. `Precipitation` (fallback)
+6. Default fallback values if no data available
+
+### Auto-Update System
+- **Check Frequency**: Every 2 hours
+- **Update Process**: 
+  1. Fetch latest changes from remote
+  2. Check for updates on current branch, then master
+  3. Stop weather service
+  4. Pull latest changes
+  5. Run install script
+  6. Restart service (handled by systemd)
+
+### Error Handling
+- Comprehensive error handling for git operations
+- Proper service management with fallback restart
+- Detailed logging for debugging
+- Graceful handling of missing remote branches
+
+## Testing
+- ✅ Syntax validation passed
+- ✅ Precipitation data handling tested with multiple scenarios
+- ✅ Git update functionality tested
+- ✅ No linting errors found
+
+## Files Modified
+- `Weather.py` - Main weather display script with all fixes
+
+The system should now properly use `ProbabilityOfPrecipitation` data when available and automatically check for and apply updates every 2 hours.

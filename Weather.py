@@ -29,50 +29,103 @@ def check_git_updates():
     try:
         # Change to the project directory
         project_dir = os.path.dirname(os.path.abspath(__file__))
+        original_dir = os.getcwd()
         os.chdir(project_dir)
         
         # Check if we're in a git repository
         if not os.path.exists('.git'):
+            print("Not in a git repository, skipping update check")
+            os.chdir(original_dir)
             return False
             
+        print("Checking for git updates...")
+        
         # Fetch latest changes from remote
-        result = subprocess.run(['git', 'fetch'], capture_output=True, text=True, timeout=30)
+        result = subprocess.run(['git', 'fetch', 'origin'], capture_output=True, text=True, timeout=30)
         if result.returncode != 0:
             print(f"Git fetch failed: {result.stderr}")
+            os.chdir(original_dir)
             return False
             
-        # Check if there are updates
-        result = subprocess.run(['git', 'rev-list', 'HEAD..origin/HEAD', '--count'], 
-                              capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            commit_count = int(result.stdout.strip())
-            if commit_count > 0:
-                print(f"Found {commit_count} new commits. Restarting service...")
-                
-                # Stop the weather service
-                subprocess.run(['sudo', 'systemctl', 'stop', 'weather.service'], 
-                             capture_output=True, timeout=10)
-                
-                # Pull the latest changes
-                result = subprocess.run(['git', 'pull'], capture_output=True, text=True, timeout=30)
-                if result.returncode == 0:
-                    print("Git pull successful. Running install script...")
-                    
-                    # Run the install script
-                    install_result = subprocess.run(['./install.sh'], 
-                                                  capture_output=True, text=True, timeout=120)
-                    if install_result.returncode == 0:
-                        print("Install script completed successfully.")
-                        return True
-                    else:
-                        print(f"Install script failed: {install_result.stderr}")
-                        return False
+        # Get current branch name
+        branch_result = subprocess.run(['git', 'branch', '--show-current'], 
+                                     capture_output=True, text=True, timeout=10)
+        if branch_result.returncode != 0:
+            print(f"Failed to get current branch: {branch_result.stderr}")
+            os.chdir(original_dir)
+            return False
+            
+        current_branch = branch_result.stdout.strip()
+        print(f"Current branch: {current_branch}")
+        
+        # Check if there are updates - try current branch first, then master
+        update_branches = [current_branch, 'master']
+        commit_count = 0
+        
+        for branch in update_branches:
+            result = subprocess.run(['git', 'rev-list', f'HEAD..origin/{branch}', '--count'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                commit_count = int(result.stdout.strip())
+                if commit_count > 0:
+                    print(f"Found {commit_count} new commits on origin/{branch}. Updating...")
+                    break
                 else:
-                    print(f"Git pull failed: {result.stderr}")
+                    print(f"No updates on origin/{branch}")
+            else:
+                print(f"Branch origin/{branch} not found or no updates available")
+        
+        if commit_count > 0:
+            # Stop the weather service
+            print("Stopping weather service...")
+            stop_result = subprocess.run(['sudo', 'systemctl', 'stop', 'weather.service'], 
+                                       capture_output=True, text=True, timeout=10)
+            if stop_result.returncode != 0:
+                print(f"Warning: Failed to stop service: {stop_result.stderr}")
+            
+            # Pull the latest changes from master (most stable)
+            print("Pulling latest changes from master...")
+            result = subprocess.run(['git', 'pull', 'origin', 'master'], 
+                                  capture_output=True, text=True, timeout=30)
+            if result.returncode == 0:
+                print("Git pull successful. Running install script...")
+                
+                # Make install script executable
+                subprocess.run(['chmod', '+x', './install.sh'], timeout=10)
+                
+                # Run the install script
+                install_result = subprocess.run(['./install.sh'], 
+                                              capture_output=True, text=True, timeout=120)
+                if install_result.returncode == 0:
+                    print("Install script completed successfully.")
+                    print("Service will be restarted automatically by systemd.")
+                    os.chdir(original_dir)
+                    return True
+                else:
+                    print(f"Install script failed: {install_result.stderr}")
+                    # Try to restart service anyway
+                    subprocess.run(['sudo', 'systemctl', 'start', 'weather.service'], 
+                                 capture_output=True, timeout=10)
+                    os.chdir(original_dir)
                     return False
+            else:
+                print(f"Git pull failed: {result.stderr}")
+                # Try to restart service anyway
+                subprocess.run(['sudo', 'systemctl', 'start', 'weather.service'], 
+                             capture_output=True, timeout=10)
+                os.chdir(original_dir)
+                return False
+        else:
+            print("No updates available on any tracked branch")
+        
+        os.chdir(original_dir)
         return False
     except Exception as e:
         print(f"Error checking git updates: {e}")
+        try:
+            os.chdir(original_dir)
+        except:
+            pass
         return False
 
 # Access the Authorization value from the configuration
@@ -356,7 +409,7 @@ def get_weather_forecast(TODAY_Date):
                 element_value = d['ElementValue'][0]
                 print(f"Processing element value: {element_value}")
                 
-                # 尋找降雨機率相關欄位名稱
+                # 優先尋找 ProbabilityOfPrecipitation 欄位
                 if 'ProbabilityOfPrecipitation' in element_value:
                     PopDataList.append(element_value['ProbabilityOfPrecipitation'])
                     print(f"Found ProbabilityOfPrecipitation data: {element_value['ProbabilityOfPrecipitation']}")
@@ -2763,11 +2816,21 @@ carousel_mode = MODE_ANIMATION
 carousel_timer = 0
 animation_frame = 0
 ticker_scroll = 0
+update_check_counter = 0  # Counter for update checks
 
 # TODAY_Date = datetime.now()
 
 while 1:
     try:
+        # Check for updates every 2 hours (7200 seconds)
+        update_check_counter += 1
+        if update_check_counter >= 7200:  # 2 hours
+            print("Checking for system updates...")
+            if check_git_updates():
+                print("System updated successfully. Exiting to allow restart...")
+                break  # Exit the main loop to allow systemd to restart the service
+            update_check_counter = 0
+        
         if sec >= 60*40: # 每隔40分鐘更新一次資料
             TODAY_Date = datetime.now()
             # TODAY_Date = datetime.ate + timedelta(hours=0))
