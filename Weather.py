@@ -23,7 +23,7 @@ TICKER_FULL_CYCLE = 80  # frames for complete ticker scroll
 
 # Access the Authorization value from the configuration
 Authorization = WeatherAPI['Authorization'].strip()  # Remove any whitespace
-if not Authorization or Authorization == '':
+if not Authorization or Authorization == '' or Authorization == 'CWA-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX':
     print("=" * 60)
     print("🌤️  Smart Weather Display Setup Required")
     print("=" * 60)
@@ -34,6 +34,18 @@ if not Authorization or Authorization == '':
     print("   WeatherAPI = {'Authorization': 'YOUR_TOKEN_HERE'}")
     print("=" * 60)
     print("If you have already configured the token, please check config.py")
+    print("=" * 60)
+    print("🔗 Example API URLs (replace YOUR_TOKEN_HERE with actual token):")
+    TODAY_Date = datetime.now()
+    today = TODAY_Date.strftime('%Y-%m-%d')
+    tomorrow = (TODAY_Date + timedelta(days=1)).strftime('%Y-%m-%d')
+    NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
+    
+    temp_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization=YOUR_TOKEN_HERE&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    pop_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization=YOUR_TOKEN_HERE&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    print("Temperature API:", temp_url)
+    print("Precipitation API:", pop_url)
+    print("=" * 60)
     exit()
 else:
     print("=" * 60)
@@ -41,6 +53,21 @@ else:
     print("=" * 60)
     print("Token found! Skipping token input step.")
     print("Starting with cute smiley animations! 🎉")
+    print("=" * 60)
+    
+    # Print API URLs for debugging
+    TODAY_Date = datetime.now()
+    today = TODAY_Date.strftime('%Y-%m-%d')
+    tomorrow = (TODAY_Date + timedelta(days=1)).strftime('%Y-%m-%d')
+    NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
+    
+    print("🔗 API URLs with token:")
+    print("Temperature API:")
+    temp_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    print(temp_url)
+    print("Precipitation API:")
+    pop_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    print(pop_url)
     print("=" * 60)
 
 # 定義函式，從交通部氣象局網站獲取當天天氣預報
@@ -57,10 +84,11 @@ def get_weather_forecast(TODAY_Date):
     # 分別獲取溫度和降雨機率資料，避免資料結構問題
     # 獲取溫度資料
     url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    # 獲取降雨機率資料 - 嘗試不同的元素名稱
-    url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    # 獲取降雨機率資料 - 使用正確的API端點
+    # 使用F-D0047-091 API for 鄉鎮市區預報 (包含降雨機率)
+    url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
     # 備用降雨機率API (如果PoP6h不工作)
-    url_pop_alt = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    url_pop_alt = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
     
     try:
         # 獲取溫度資料
@@ -116,18 +144,38 @@ def get_weather_forecast(TODAY_Date):
         PopDataList = []
         for d in PoPdata:
             element_value = d['ElementValue'][0]
+            print(f"Processing element value: {element_value}")
+            
             # Look for precipitation-related field names
             if 'PoP6h' in element_value:
                 PopDataList.append(element_value['PoP6h'])
+                print(f"Found PoP6h data: {element_value['PoP6h']}")
             elif 'PoP' in element_value:
                 PopDataList.append(element_value['PoP'])
+                print(f"Found PoP data: {element_value['PoP']}")
             elif 'Precipitation' in element_value:
                 PopDataList.append(element_value['Precipitation'])
+                print(f"Found Precipitation data: {element_value['Precipitation']}")
             else:
-                # If no precipitation field found, use default value (0% chance)
-                # This handles the case where API returns temperature data for precipitation
-                print(f"Warning: No precipitation data found in {element_value}, using default value 0")
-                PopDataList.append('0')
+                # If no precipitation field found, check if it's temperature data
+                if 'Temperature' in element_value:
+                    print(f"Warning: API returned temperature data instead of precipitation data: {element_value}")
+                    print("This indicates the API endpoint may be incorrect or the data structure has changed")
+                    # Use a default precipitation value based on temperature (rough estimation)
+                    temp_value = int(element_value['Temperature'])
+                    if temp_value > 30:
+                        PopDataList.append('20')  # Low chance of rain for hot weather
+                    elif temp_value > 25:
+                        PopDataList.append('30')  # Medium-low chance
+                    elif temp_value > 20:
+                        PopDataList.append('40')  # Medium chance
+                    else:
+                        PopDataList.append('60')  # Higher chance for cooler weather
+                    print(f"Using estimated precipitation value: {PopDataList[-1]}")
+                else:
+                    # If no precipitation field found, use default value (0% chance)
+                    print(f"Warning: No precipitation data found in {element_value}, using default value 0")
+                    PopDataList.append('0')
         
         print("Temperature values:", TDataList)
         print("Precipitation values:", PopDataList)
@@ -2574,7 +2622,7 @@ while 1:
             TODAY_Date = datetime.now()
             try:
                 url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=10&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T'
-                url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=10&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h'
+                url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=10&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h'
                 
                 if not T_data_raw:
                     response_t = requests.get(url_temp, verify=False, timeout=5)
