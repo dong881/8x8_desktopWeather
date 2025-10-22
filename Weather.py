@@ -96,7 +96,7 @@ if not Authorization or Authorization == '' or Authorization == 'CWA-XXXXXXXX-XX
     NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
     
     temp_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization=YOUR_TOKEN_HERE&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    pop_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization=YOUR_TOKEN_HERE&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    pop_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization=YOUR_TOKEN_HERE&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
     print("Temperature API:", temp_url)
     print("Precipitation API:", pop_url)
     print("=" * 60)
@@ -120,9 +120,104 @@ else:
     temp_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
     print(temp_url)
     print("Precipitation API:")
-    pop_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    pop_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
     print(pop_url)
     print("=" * 60)
+
+def filter_3hour_intervals(temp_list, pop_list, temp_data, pop_data, current_time):
+    """
+    過濾出3小時間隔的資料
+    從當前時間開始，每3小時取一個資料點
+    """
+    filtered_temp = []
+    filtered_pop = []
+    
+    if not temp_data or not pop_data:
+        return temp_list[:8], pop_list[:8]
+    
+    # 獲取當前時間
+    current_hour = current_time.hour
+    current_date = current_time.strftime('%Y-%m-%d')
+    
+    # 計算3小時間隔的時間點
+    three_hour_intervals = []
+    for i in range(8):  # 取8個時間點
+        hour = (current_hour + i * 3) % 24
+        day_offset = (current_hour + i * 3) // 24
+        target_date = (current_time + timedelta(days=day_offset)).strftime('%Y-%m-%d')
+        target_time = f"{target_date}T{hour:02d}:00:00"
+        three_hour_intervals.append(target_time)
+    
+    print(f"3-hour intervals to filter: {three_hour_intervals}")
+    
+    # 從溫度資料中過濾
+    temp_dict = {}
+    if temp_data:
+        for item in temp_data:
+            start_time = item.get('StartTime', '')
+            end_time = item.get('EndTime', '')
+            element_value = item['ElementValue'][0]
+            if 'Temperature' in element_value:
+                temp_value = element_value['Temperature']
+                # 使用開始時間作為鍵
+                temp_dict[start_time] = temp_value
+                print(f"Temperature data point: {start_time} -> {temp_value}")
+    
+    # 從降雨機率資料中過濾
+    pop_dict = {}
+    if pop_data:
+        for item in pop_data:
+            start_time = item.get('StartTime', '')
+            end_time = item.get('EndTime', '')
+            element_value = item['ElementValue'][0]
+            pop_value = None
+            
+            # 尋找降雨機率值
+            for key in ['PoP12h', 'PoP6h', 'PoP', 'Precipitation']:
+                if key in element_value:
+                    pop_value = element_value[key]
+                    break
+            
+            if pop_value is not None:
+                pop_dict[start_time] = pop_value
+                print(f"Precipitation data point: {start_time} -> {pop_value}")
+    
+    # 為每個3小時間隔尋找最接近的資料
+    for target_time in three_hour_intervals:
+        # 尋找最接近的溫度資料
+        temp_value = None
+        for time_key, value in temp_dict.items():
+            # 處理API返回的時間格式 (包含時區信息)
+            clean_time_key = time_key.split('+')[0] if '+' in time_key else time_key
+            if target_time in clean_time_key or clean_time_key in target_time:
+                temp_value = value
+                break
+        
+        if temp_value is None:
+            # 如果找不到精確匹配，使用預設值
+            temp_value = '22'
+        
+        filtered_temp.append(temp_value)
+        
+        # 尋找最接近的降雨機率資料
+        pop_value = None
+        for time_key, value in pop_dict.items():
+            # 處理API返回的時間格式 (包含時區信息)
+            clean_time_key = time_key.split('+')[0] if '+' in time_key else time_key
+            if target_time in clean_time_key or clean_time_key in target_time:
+                pop_value = value
+                break
+        
+        if pop_value is None:
+            # 如果找不到精確匹配，使用預設值
+            pop_value = '20'
+        
+        filtered_pop.append(pop_value)
+    
+    print(f"Filtered temperature values: {filtered_temp}")
+    print(f"Filtered precipitation values: {filtered_pop}")
+    
+    return filtered_temp, filtered_pop
 
 # 定義函式，從交通部氣象局網站獲取當天天氣預報
 def get_weather_forecast(TODAY_Date):
@@ -133,106 +228,121 @@ def get_weather_forecast(TODAY_Date):
     print(today + " ~ " + tomorrow)
     
     NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
-    print(NowTime)
+    print(f"Current time: {NowTime}")
     
-    # 分別獲取溫度和降雨機率資料，避免資料結構問題
-    # 獲取溫度資料
-    url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    # 獲取降雨機率資料 - 使用正確的API端點
-    # 使用F-D0047-091 API for 鄉鎮市區預報 (包含降雨機率)
-    url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    # 備用降雨機率API (如果PoP6h不工作)
-    url_pop_alt = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    # 計算3小時間隔的時間點
+    current_hour = TODAY_Date.hour
+    # 找到下一個3小時間隔的時間點 (0, 3, 6, 9, 12, 15, 18, 21)
+    next_3hour = ((current_hour // 3) + 1) * 3
+    if next_3hour >= 24:
+        next_3hour = 0
+        tomorrow = (TODAY_Date + timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    # 設定時間範圍為未來24小時，每3小時一個間隔
+    time_from = f"{today}T{NowTime}:00:00"
+    time_to = f"{tomorrow}T{NowTime}:00:00"
+    
+    print(f"Time range: {time_from} to {time_to}")
+    
+    # 使用F-D0047-061 API - 臺灣各縣市鄉鎮未來1週逐12小時天氣預報
+    # 獲取多個天氣元素：溫度、體感溫度、降雨機率、天氣現象、相對濕度、風速、風向
+    elements = ['T', 'AT', 'PoP12h', 'Wx', 'RH', 'WS', 'WD']
+    element_names = ','.join(elements)
+    
+    # 構建API URL
+    url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName={element_names}&timeFrom={time_from}&timeTo={time_to}'
+    
+    print(f"API URL: {url}")
+    
+    # 備用API URLs for individual elements if needed
+    url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={time_from}&timeTo={time_to}'
+    url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP12h&timeFrom={time_from}&timeTo={time_to}'
     
     try:
-        # 獲取溫度資料
-        response_temp = requests.get(url_temp, verify=False, timeout=10)
-        data_temp = response_temp.json()
+        # 首先嘗試獲取包含所有元素的綜合資料
+        response = requests.get(url, verify=False, timeout=10)
+        data = response.json()
+        print("Full API response:", data)
         
-        # 檢查溫度資料是否有效
-        if (data_temp.get("success") == "true" and 
-            "records" in data_temp and 
-            "Locations" in data_temp["records"] and 
-            len(data_temp["records"]["Locations"]) > 0 and
-            "Location" in data_temp["records"]["Locations"][0] and
-            len(data_temp["records"]["Locations"][0]["Location"]) > 0):
-            
-            T_data = data_temp["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-            print("Temperature data:", T_data)
-        else:
-            print("Temperature API returned empty data, using fallback")
-            # 使用預設溫度資料
-            T_data = [{'ElementValue': [{'Temperature': '22'}]} for _ in range(8)]
-        
-        # 獲取降雨機率資料
-        response_pop = requests.get(url_pop, verify=False, timeout=10)
-        data_pop = response_pop.json()
-        print("Full PoP API response:", data_pop)
-        
-        # 檢查降雨機率資料是否有效
+        T_data = None
         PoPdata = None
-        if (data_pop.get("success") == "true" and 
-            "records" in data_pop and 
-            "Locations" in data_pop["records"] and 
-            len(data_pop["records"]["Locations"]) > 0 and
-            "Location" in data_pop["records"]["Locations"][0] and
-            len(data_pop["records"]["Locations"][0]["Location"]) > 0):
+        
+        # 檢查API回應是否有效
+        if (data.get("success") == "true" and 
+            "records" in data and 
+            "Locations" in data["records"] and 
+            len(data["records"]["Locations"]) > 0 and
+            "Location" in data["records"]["Locations"][0] and
+            len(data["records"]["Locations"][0]["Location"]) > 0):
             
-            try:
-                PoPdata = data_pop["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-                print("Precipitation data:", PoPdata)
-                
-                # 檢查是否真的包含降雨機率資料
-                has_precipitation_data = False
-                for d in PoPdata:
-                    element_value = d['ElementValue'][0]
-                    if any(key in element_value for key in ['PoP6h', 'PoP', 'Precipitation']):
-                        has_precipitation_data = True
-                        break
-                
-                if not has_precipitation_data:
-                    print("Warning: PoP6h API returned no precipitation data, trying alternative endpoint...")
-                    # 嘗試備用API
-                    response_pop_alt = requests.get(url_pop_alt, verify=False, timeout=10)
-                    data_pop_alt = response_pop_alt.json()
-                    print("Alternative PoP API response:", data_pop_alt)
-                    
-                    if (data_pop_alt.get("success") == "true" and 
-                        "records" in data_pop_alt and 
-                        "Locations" in data_pop_alt["records"] and 
-                        len(data_pop_alt["records"]["Locations"]) > 0 and
-                        "Location" in data_pop_alt["records"]["Locations"][0] and
-                        len(data_pop_alt["records"]["Locations"][0]["Location"]) > 0):
-                        PoPdata = data_pop_alt["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-                        print("Alternative precipitation data:", PoPdata)
-                    else:
-                        print("Alternative API also returned empty data")
-                        PoPdata = None
-                        
-            except (KeyError, IndexError) as e:
-                print(f"Error accessing precipitation data: {e}")
-                PoPdata = None
-        else:
-            print("PoP API returned empty data, trying alternative endpoint...")
-            # 嘗試備用API
-            response_pop_alt = requests.get(url_pop_alt, verify=False, timeout=10)
-            data_pop_alt = response_pop_alt.json()
-            print("Alternative PoP API response:", data_pop_alt)
+            location_data = data["records"]["Locations"][0]["Location"][0]
+            weather_elements = location_data["WeatherElement"]
             
-            if (data_pop_alt.get("success") == "true" and 
-                "records" in data_pop_alt and 
-                "Locations" in data_pop_alt["records"] and 
-                len(data_pop_alt["records"]["Locations"]) > 0 and
-                "Location" in data_pop_alt["records"]["Locations"][0] and
-                len(data_pop_alt["records"]["Locations"][0]["Location"]) > 0):
-                PoPdata = data_pop_alt["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-                print("Alternative precipitation data:", PoPdata)
+            # 從綜合資料中提取溫度和降雨機率資料
+            for element in weather_elements:
+                element_name = element.get("elementName", "Unknown")
+                print(f"Processing element: {element_name}")
+                
+                if element_name == "T":  # 溫度
+                    T_data = element["Time"]
+                    print("Temperature data:", T_data)
+                elif element_name == "PoP12h":  # 12小時降雨機率
+                    PoPdata = element["Time"]
+                    print("Precipitation data:", PoPdata)
+                elif "ProbabilityOfPrecipitation" in str(element.get("Time", [])):  # 降雨機率
+                    PoPdata = element["Time"]
+                    print("Precipitation data (ProbabilityOfPrecipitation):", PoPdata)
+        
+        # 如果綜合API失敗，嘗試個別API
+        if T_data is None:
+            print("Trying individual temperature API...")
+            response_temp = requests.get(url_temp, verify=False, timeout=10)
+            data_temp = response_temp.json()
+            
+            if (data_temp.get("success") == "true" and 
+                "records" in data_temp and 
+                "Locations" in data_temp["records"] and 
+                len(data_temp["records"]["Locations"]) > 0 and
+                "Location" in data_temp["records"]["Locations"][0] and
+                len(data_temp["records"]["Locations"][0]["Location"]) > 0):
+                
+                T_data = data_temp["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+                print("Individual temperature data:", T_data)
             else:
-                print("Alternative API also returned empty data")
+                print("Temperature API returned empty data, using fallback")
+                T_data = [{'ElementValue': [{'Temperature': '22'}]} for _ in range(8)]
+        
+        if PoPdata is None:
+            print("Trying individual precipitation API...")
+            response_pop = requests.get(url_pop, verify=False, timeout=10)
+            data_pop = response_pop.json()
+            
+            if (data_pop.get("success") == "true" and 
+                "records" in data_pop and 
+                "Locations" in data_pop["records"] and 
+                len(data_pop["records"]["Locations"]) > 0 and
+                "Location" in data_pop["records"]["Locations"][0] and
+                len(data_pop["records"]["Locations"][0]["Location"]) > 0):
+                
+                PoPdata = data_pop["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+                print("Individual precipitation data:", PoPdata)
+            else:
+                print("Precipitation API returned empty data, using fallback")
                 PoPdata = None
         
         # 從資料中提取出每個時間段的數值
-        TDataList = [list(d['ElementValue'][0].values())[0] for d in T_data]
+        TDataList = []
+        if T_data:
+            for d in T_data:
+                element_value = d['ElementValue'][0]
+                if 'Temperature' in element_value:
+                    TDataList.append(element_value['Temperature'])
+                else:
+                    # 如果沒有找到溫度資料，使用預設值
+                    TDataList.append('22')
+        else:
+            TDataList = ['22'] * 8
+            
         print("Temperature values:", TDataList)
         
         # 處理降雨機率資料
@@ -241,13 +351,19 @@ def get_weather_forecast(TODAY_Date):
             print("Raw PoP data structure:", [d['ElementValue'] for d in PoPdata])
             print("Available field names in PoP data:", [list(d['ElementValue'][0].keys()) for d in PoPdata])
             
-            # Fix: Extract precipitation data correctly
+            # 提取降雨機率資料
             for d in PoPdata:
                 element_value = d['ElementValue'][0]
                 print(f"Processing element value: {element_value}")
                 
-                # Look for precipitation-related field names
-                if 'PoP6h' in element_value:
+                # 尋找降雨機率相關欄位名稱
+                if 'ProbabilityOfPrecipitation' in element_value:
+                    PopDataList.append(element_value['ProbabilityOfPrecipitation'])
+                    print(f"Found ProbabilityOfPrecipitation data: {element_value['ProbabilityOfPrecipitation']}")
+                elif 'PoP12h' in element_value:
+                    PopDataList.append(element_value['PoP12h'])
+                    print(f"Found PoP12h data: {element_value['PoP12h']}")
+                elif 'PoP6h' in element_value:
                     PopDataList.append(element_value['PoP6h'])
                     print(f"Found PoP6h data: {element_value['PoP6h']}")
                 elif 'PoP' in element_value:
@@ -257,25 +373,9 @@ def get_weather_forecast(TODAY_Date):
                     PopDataList.append(element_value['Precipitation'])
                     print(f"Found Precipitation data: {element_value['Precipitation']}")
                 else:
-                    # If no precipitation field found, check if it's temperature data
-                    if 'Temperature' in element_value:
-                        print(f"Warning: API returned temperature data instead of precipitation data: {element_value}")
-                        print("This indicates the API endpoint may be incorrect or the data structure has changed")
-                        # Use a default precipitation value based on temperature (rough estimation)
-                        temp_value = int(element_value['Temperature'])
-                        if temp_value > 30:
-                            PopDataList.append('20')  # Low chance of rain for hot weather
-                        elif temp_value > 25:
-                            PopDataList.append('30')  # Medium-low chance
-                        elif temp_value > 20:
-                            PopDataList.append('40')  # Medium chance
-                        else:
-                            PopDataList.append('60')  # Higher chance for cooler weather
-                        print(f"Using estimated precipitation value: {PopDataList[-1]}")
-                    else:
-                        # If no precipitation field found, use default value (0% chance)
-                        print(f"Warning: No precipitation data found in {element_value}, using default value 0")
-                        PopDataList.append('0')
+                    # 如果沒有找到降雨機率欄位，使用預設值
+                    print(f"Warning: No precipitation data found in {element_value}, using default value 0")
+                    PopDataList.append('0')
         else:
             print("No precipitation data available, using fallback values")
             # 使用預設降雨機率資料
@@ -283,7 +383,10 @@ def get_weather_forecast(TODAY_Date):
         
         print("Precipitation values:", PopDataList)
         
-        return temperature_to_led_levels(TDataList), PoP_to_led_levels(PopDataList)
+        # 過濾出3小時間隔的資料
+        filtered_temp, filtered_pop = filter_3hour_intervals(TDataList, PopDataList, T_data, PoPdata, TODAY_Date)
+        
+        return temperature_to_led_levels(filtered_temp), PoP_to_led_levels(filtered_pop)
         
     except Exception as e:
         print(f"Error fetching weather data: {e}")
@@ -2725,7 +2828,7 @@ while 1:
             TODAY_Date = datetime.now()
             try:
                 url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=10&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T'
-                url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=10&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h'
+                url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=10&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h'
                 
                 if not T_data_raw:
                     response_t = requests.get(url_temp, verify=False, timeout=5)
