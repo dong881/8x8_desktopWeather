@@ -9,6 +9,8 @@ import requests
 from datetime import datetime, timedelta
 import sys
 import random
+import subprocess
+import os
 # Import the configuration from config.py
 from config import WeatherAPI
 import urllib3
@@ -20,6 +22,58 @@ MODE_TICKER = 1
 MODE_BARGRAPH = 2
 CAROUSEL_DURATION = 15  # seconds per mode (increased for better viewing)
 TICKER_FULL_CYCLE = 80  # frames for complete ticker scroll
+
+# Git pull checking function
+def check_git_updates():
+    """Check if there are remote updates and restart service if needed"""
+    try:
+        # Change to the project directory
+        project_dir = os.path.dirname(os.path.abspath(__file__))
+        os.chdir(project_dir)
+        
+        # Check if we're in a git repository
+        if not os.path.exists('.git'):
+            return False
+            
+        # Fetch latest changes from remote
+        result = subprocess.run(['git', 'fetch'], capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            print(f"Git fetch failed: {result.stderr}")
+            return False
+            
+        # Check if there are updates
+        result = subprocess.run(['git', 'rev-list', 'HEAD..origin/HEAD', '--count'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            commit_count = int(result.stdout.strip())
+            if commit_count > 0:
+                print(f"Found {commit_count} new commits. Restarting service...")
+                
+                # Stop the weather service
+                subprocess.run(['sudo', 'systemctl', 'stop', 'weather.service'], 
+                             capture_output=True, timeout=10)
+                
+                # Pull the latest changes
+                result = subprocess.run(['git', 'pull'], capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    print("Git pull successful. Running install script...")
+                    
+                    # Run the install script
+                    install_result = subprocess.run(['./install.sh'], 
+                                                  capture_output=True, text=True, timeout=120)
+                    if install_result.returncode == 0:
+                        print("Install script completed successfully.")
+                        return True
+                    else:
+                        print(f"Install script failed: {install_result.stderr}")
+                        return False
+                else:
+                    print(f"Git pull failed: {result.stderr}")
+                    return False
+        return False
+    except Exception as e:
+        print(f"Error checking git updates: {e}")
+        return False
 
 # Access the Authorization value from the configuration
 Authorization = WeatherAPI['Authorization'].strip()  # Remove any whitespace
