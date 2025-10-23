@@ -199,6 +199,9 @@ def get_weather_forecast(TODAY_Date):
                 elif 'PoP' in element_value:
                     PopDataList.append(element_value['PoP'])
                     print(f"Found PoP data: {element_value['PoP']}")
+                elif 'ProbabilityOfPrecipitation' in element_value:
+                    PopDataList.append(element_value['ProbabilityOfPrecipitation'])
+                    print(f"Found ProbabilityOfPrecipitation data: {element_value['ProbabilityOfPrecipitation']}")
                 elif 'Precipitation' in element_value:
                     PopDataList.append(element_value['Precipitation'])
                     print(f"Found Precipitation data: {element_value['Precipitation']}")
