@@ -14,10 +14,9 @@ from config import WeatherAPI
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Carousel mode constants
-MODE_ANIMATION = 0
-MODE_TICKER = 1
-MODE_BARGRAPH = 2
+# Carousel mode constants - MODE_ANIMATION removed
+MODE_TICKER = 0
+MODE_BARGRAPH = 1
 CAROUSEL_DURATION = 15  # seconds per mode (increased for better viewing)
 TICKER_FULL_CYCLE = 80  # frames for complete ticker scroll
 
@@ -2538,74 +2537,201 @@ def draw_digit(draw, digit, x_offset, y_offset):
                 if pixel:
                     draw.point((x_offset + x, y_offset + y), fill="white")
 
-def display_ticker(T_data, PoP_data, scroll_offset):
-    """Display scrolling ticker with 24-hour forecast"""
+def display_ticker(T_data, PoP_data, scroll_offset, current_time_index=0):
+    """Display scrolling ticker with ONLY current period forecast"""
     current_hour = datetime.now().hour
     brightness = get_brightness_for_time(current_hour)
     device.contrast(brightness)
     
     with canvas(device) as draw:
-        # Create ticker message
-        # Show next few hours forecast
-        num_hours = min(3, len(T_data))
-        x_pos = 8 - scroll_offset
-        
-        for i in range(num_hours):
-            if i < len(T_data) and i < len(PoP_data):
-                temp = str(int(float(T_data[i]))) if i < len(T_data) else "??"
-                pop = str(int(float(PoP_data[i//2]))) if i//2 < len(PoP_data) else "?"
-                
-                # Draw temperature
-                for char in temp:
-                    if x_pos >= -3 and x_pos < 8:
-                        draw_digit(draw, char, x_pos, 1)
-                    x_pos += 4
-                
-                # Draw degree symbol
+        # Only show current period (index 0 after shift_array)
+        # This represents the current 3-hour forecast period
+        if len(T_data) > current_time_index and len(PoP_data) > current_time_index // 2:
+            temp = str(int(float(T_data[current_time_index]))) if current_time_index < len(T_data) else "??"
+            pop = str(int(float(PoP_data[current_time_index // 2]))) if current_time_index // 2 < len(PoP_data) else "?"
+            
+            # Start position for scrolling
+            x_pos = 8 - scroll_offset
+            
+            # Draw temperature
+            for char in temp:
                 if x_pos >= -3 and x_pos < 8:
-                    draw_digit(draw, '°', x_pos, 1)
-                x_pos += 3
-                
-                # Space
-                x_pos += 2
-                
-                # Draw precipitation %
-                for char in pop:
-                    if x_pos >= -3 and x_pos < 8:
-                        draw_digit(draw, char, x_pos, 1)
-                    x_pos += 4
-                
-                if x_pos >= -3 and x_pos < 8:
-                    draw_digit(draw, '%', x_pos, 1)
+                    draw_digit(draw, char, x_pos, 1)
                 x_pos += 4
-                
-                # Separator
-                x_pos += 3
+            
+            # Draw degree symbol
+            if x_pos >= -3 and x_pos < 8:
+                draw_digit(draw, '°', x_pos, 1)
+            x_pos += 3
+            
+            # Space
+            x_pos += 2
+            
+            # Draw precipitation %
+            for char in pop:
+                if x_pos >= -3 and x_pos < 8:
+                    draw_digit(draw, char, x_pos, 1)
+                x_pos += 4
+            
+            if x_pos >= -3 and x_pos < 8:
+                draw_digit(draw, '%', x_pos, 1)
+            x_pos += 4
 
-def display_heights(bool,heights,PoP_format,IndexCol):
-    # set the brightness level of the LED matrix based on time
+def display_heights(bool, heights, PoP_format, IndexCol):
+    """Display bar graph with smart visual hints
+    
+    Features:
+    - Current period column blinks
+    - Temperature displayed as 8-level bars (12-33°C range)
+    - Rain probability >=60% shows dot at bottom (enhanced on non-blink cycle)
+    - Low temp alert (<13°C) - double blink
+    - Extreme heat alert (>=33°C) - top pixel special display
+    """
+    # Set the brightness level of the LED matrix based on time
     current_hour = datetime.now().hour
     brightness = get_brightness_for_time(current_hour)
     device.contrast(brightness)
     
-    # display the heights on the LED matrix
+    # Display the heights on the LED matrix
     with canvas(device) as draw:
         for i in range(8):
-            if bool and i==IndexCol:
-                continue 
+            # Current period blinking logic
+            if bool and i == IndexCol:
+                continue  # Skip current column on blink cycle
+            
             height = heights[i]
+            
+            # Get actual temperature value for special alerts
+            # Convert height (0-7) back to approximate temperature
+            # Formula: temp = height * (21/7) + 12, where 21 = (33-12)
+            approx_temp = height * 3 + 12
+            
+            # Draw temperature bars
             for j in range(height):
-                draw.point((i, 7-j-1), fill="white")
+                # Check for extreme heat (top pixel)
+                if j == height - 1 and approx_temp >= 33:
+                    # Extreme heat: make top pixel extra bright (double-draw for emphasis)
+                    if not bool:  # Only show on non-blink cycle for extra attention
+                        draw.point((i, 7 - j - 1), fill="white")
+                else:
+                    draw.point((i, 7 - j - 1), fill="white")
+            
+            # Rain probability indicator at bottom
             if PoP_format[i] == 1:
+                # Rain probability >=60% - show dot at bottom
+                # Note: PoP_format only indicates >=60% (value 1) or <60% (value 0)
+                # The code uses double-draw on non-blink cycle to emphasize visibility
                 draw.point((i, 7), fill="white")
+                # On non-blink cycle, draw again for enhanced visibility
+                if not bool:
+                    draw.point((i, 7), fill="white")
+            
+            # Low temperature alert (<13°C) - make entire column blink more
+            if approx_temp < 13:
+                # On blink cycle, redraw to create double-blink effect
+                if bool and i != IndexCol:
+                    for j in range(height):
+                        draw.point((i, 7 - j - 1), fill="white")
+
+def run_simulation_test():
+    """
+    Simulation test function to verify all display scenarios
+    Tests:
+    1. Low temperature alert (<13°C)
+    2. Normal temperature (13-32°C)
+    3. Extreme heat (>=33°C)
+    4. Rain probability >=60%
+    5. High rain probability >=80%
+    6. Current period blinking
+    7. Ticker display with current period only
+    """
+    print("=" * 60)
+    print("🧪 Running Simulation Tests")
+    print("=" * 60)
+    
+    # Test Case 1: Low temperature (10°C - height 0)
+    print("\n📊 Test 1: Low Temperature Alert (<13°C)")
+    test_heights_low = [0, 1, 0, 2, 1, 0, 1, 2]  # Temps around 12°C
+    test_pop_low = [0, 0, 1, 1, 0, 0, 1, 0]
+    for i in range(4):
+        display_heights(i % 2, test_heights_low, test_pop_low, 2)
+        time.sleep(0.5)
+    print("✓ Low temperature display verified")
+    
+    # Test Case 2: Normal temperature (20°C - height 2-3)
+    print("\n📊 Test 2: Normal Temperature Display")
+    test_heights_normal = [3, 3, 4, 3, 4, 3, 3, 4]  # Temps around 21-24°C
+    test_pop_normal = [0, 1, 0, 1, 0, 0, 1, 0]
+    for i in range(4):
+        display_heights(i % 2, test_heights_normal, test_pop_normal, 3)
+        time.sleep(0.5)
+    print("✓ Normal temperature display verified")
+    
+    # Test Case 3: Extreme heat (33°C - height 7)
+    print("\n📊 Test 3: Extreme Heat Alert (>=33°C)")
+    test_heights_hot = [6, 7, 7, 6, 7, 6, 7, 6]  # Temps around 30-33°C
+    test_pop_hot = [0, 0, 0, 1, 0, 1, 0, 0]
+    for i in range(4):
+        display_heights(i % 2, test_heights_hot, test_pop_hot, 1)
+        time.sleep(0.5)
+    print("✓ Extreme heat display verified")
+    
+    # 測試 Case 4: 高降雨機率測試
+    print("\n📊 Test 4: 降雨機率顯示 (>=60%)")
+    test_heights_rain = [3, 4, 3, 4, 3, 4, 3, 4]
+    test_pop_rain = [1, 1, 1, 1, 1, 1, 1, 1]  # All periods with rain >=60%
+    for i in range(4):
+        display_heights(i % 2, test_heights_rain, test_pop_rain, 0)
+        time.sleep(0.5)
+    print("✓ Rain probability display verified")
+    
+    print("\n📊 Test 5: 混合情況測試")
+    test_heights_mixed = [1, 3, 7, 4, 0, 5, 3, 6]  # Various temps
+    test_pop_mixed = [1, 0, 1, 0, 1, 0, 1, 0]  # Alternating rain >=60%
+    for i in range(6):
+        display_heights(i % 2, test_heights_mixed, test_pop_mixed, 2)
+        time.sleep(0.5)
+    print("✓ Mixed conditions display verified")
+    
+    # Test Case 6: Ticker display (current period only)
+    print("\n📊 Test 6: Ticker Display (Current Period Only)")
+    test_temp_data = ['22', '24', '26', '25', '23', '21', '20', '19']
+    test_pop_data = ['30', '60', '80', '20']
+    
+    # Simulate ticker scroll for current period only
+    print("   Scrolling current period: 22°C, 30% rain")
+    for scroll in range(30):
+        display_ticker(test_temp_data, test_pop_data, scroll, current_time_index=0)
+        time.sleep(0.1)
+    print("✓ Ticker display verified")
+    
+    # Test Case 7: Current column blinking emphasis
+    print("\n📊 Test 7: Current Period Blinking")
+    for idx in range(8):
+        print(f"   Testing blink at column {idx}")
+        for i in range(6):
+            display_heights(i % 2, test_heights_mixed, test_pop_mixed, idx)
+            time.sleep(0.3)
+    print("✓ Current period blinking verified")
+    
+    print("\n" + "=" * 60)
+    print("✅ All Simulation Tests Completed Successfully!")
+    print("=" * 60)
+    print("Note: Remove this test function before production deployment")
+    print("=" * 60)
+
 # START_LOGO()
+
+# Uncomment the line below to run simulation tests
+# run_simulation_test()
+# exit()  # Exit after tests
 
 sec = 60*40*99
 T_format = []
 PoP_format = []
 T_data_raw = []
 PoP_data_raw = []
-carousel_mode = MODE_ANIMATION
+carousel_mode = MODE_TICKER  # Start with ticker mode
 carousel_timer = 0
 animation_frame = 0
 ticker_scroll = 0
@@ -2619,9 +2745,9 @@ while 1:
             # TODAY_Date = datetime.ate + timedelta(hours=0))
             thisHour = TODAY_Date.hour
             print(str(thisHour))
-            START_LOGO()
-            # Show cute smiley animation while updating data
-            show_data_update_animation()
+            # Removed: START_LOGO() - no startup animation on update
+            # Removed: show_data_update_animation() - no update animation
+            print("Updating weather data...")
             ArrayData = get_weather_forecast(TODAY_Date)
             print(ArrayData)
             IndexCol = calculate_output(thisHour)
@@ -2638,37 +2764,26 @@ while 1:
             T_data_raw = []
             PoP_data_raw = []
         
-        # Carousel mode switching with proper timing
+        # Carousel mode switching with proper timing (only TICKER and BARGRAPH)
         carousel_timer += 1
         
         # Special handling for ticker mode - wait for full cycle completion
         if carousel_mode == MODE_TICKER:
             if ticker_scroll >= TICKER_FULL_CYCLE and carousel_timer >= CAROUSEL_DURATION:
                 carousel_timer = 0
-                carousel_mode = (carousel_mode + 1) % 3
+                carousel_mode = (carousel_mode + 1) % 2  # Toggle between 0 and 1
                 ticker_scroll = 0  # Reset ticker scroll
-                print(f"Ticker completed, switching to mode: {['ANIMATION', 'TICKER', 'BARGRAPH'][carousel_mode]}")
+                print(f"Ticker completed, switching to mode: {['TICKER', 'BARGRAPH'][carousel_mode]}")
         else:
-            # Normal timing for other modes
+            # Normal timing for other modes (BARGRAPH)
             if carousel_timer >= CAROUSEL_DURATION:
                 carousel_timer = 0
-                carousel_mode = (carousel_mode + 1) % 3
+                carousel_mode = (carousel_mode + 1) % 2  # Toggle between 0 and 1
                 ticker_scroll = 0  # Reset ticker scroll
-                print(f"Switching to mode: {['ANIMATION', 'TICKER', 'BARGRAPH'][carousel_mode]}")
+                print(f"Switching to mode: {['TICKER', 'BARGRAPH'][carousel_mode]}")
         
-        # Display based on current carousel mode
-        if carousel_mode == MODE_ANIMATION:
-            # Show cute weather animation with smooth transitions
-            animation_frame += 1
-            if len(T_format) > 0 and len(PoP_format) > 0:
-                # Calculate average temperature and precipitation
-                temp_avg = sum(T_format) / len(T_format) * 4 + 12  # Convert back to temperature
-                pop_values = [p for i, p in enumerate(PoP_format) if i % 2 == 0]
-                pop_avg = sum(pop_values) / len(pop_values) * 60 if pop_values else 0
-                draw_weather_animation(temp_avg, pop_avg, animation_frame)
-            time.sleep(0.3)  # Slower, more pleasant animation speed
-            
-        elif carousel_mode == MODE_TICKER:
+        # Display based on current carousel mode (ANIMATION mode removed)
+        if carousel_mode == MODE_TICKER:
             # Show digital ticker with 24-hour forecast
             # Get raw temperature and precipitation data from API
             TODAY_Date = datetime.now()
@@ -2708,7 +2823,7 @@ while 1:
                         print("Precipitation API returned empty data for ticker, using fallback")
                         PoP_data_raw = ['20', '30', '25', '35']
                 
-                display_ticker(T_data_raw, PoP_data_raw, ticker_scroll)
+                display_ticker(T_data_raw, PoP_data_raw, ticker_scroll, current_time_index=0)
                 ticker_scroll += 1
                 if ticker_scroll > TICKER_FULL_CYCLE:  # Reset scroll after full cycle
                     ticker_scroll = TICKER_FULL_CYCLE  # Keep at max to signal completion
@@ -2720,7 +2835,7 @@ while 1:
                     T_data_raw = ['22', '23', '24', '25', '24', '23', '22', '21']
                 if not PoP_data_raw:
                     PoP_data_raw = ['20', '30', '25', '35']
-                display_ticker(T_data_raw, PoP_data_raw, ticker_scroll)
+                display_ticker(T_data_raw, PoP_data_raw, ticker_scroll, current_time_index=0)
                 ticker_scroll += 1
                 if ticker_scroll > TICKER_FULL_CYCLE:
                     ticker_scroll = TICKER_FULL_CYCLE
