@@ -13,6 +13,14 @@ For example (it is 7 o'clock):
 - [**4th column**] The probability of precipitation is less than 60%
 - [**2nd column**] Tomorrow from 3:00 to 6:00 the weather forecast will be below 13 degrees
 
+### Display Modes
+
+The display cycles through three modes automatically:
+
+1. **Bar Graph Mode** - Shows temperature as bar heights and precipitation probability as bottom-row indicators. The current time period column has a scan animation.
+2. **Ticker Mode** - Scrolls text showing "MAX-MIN POP%" (e.g., "28-18 30%").
+3. **Icon Mode** - Shows an animated weather icon (sun, cloud, or umbrella) based on precipitation forecast.
+
 Prerequisites
 -------------
 
@@ -136,11 +144,55 @@ Usage
 Customization
 -------------
 
--   You can modify the location for which the weather forecast is retrieved by updating the `locationName` parameter in the API URL.
-    
--   The script currently displays the temperature and precipitation probability data. You can customize the displayed data elements by modifying the `elementName` parameter in the API URL.
-    
--   You can adjust the display intervals and timings by modifying the appropriate variables in the script.
+### Location Settings
+
+Edit `Weather.py` to change the forecast location:
+```python
+LOCATION_NAME = '大安區'  # Change to your district/township name
+```
+
+### Display Timing
+
+Adjust the display timing constants in `Weather.py`:
+```python
+BARGRAPH_DURATION = 15      # seconds for bar graph display
+TICKER_DURATION = 20        # seconds for ticker scrolling
+ICON_DURATION = 10          # seconds for icon display
+UPDATE_INTERVAL_MINS = 40   # minutes between weather data updates
+```
+
+### Brightness Settings
+
+Configure the LED brightness for day/night modes:
+```python
+NIGHT_MODE_START = 0        # night mode start hour (24h)
+NIGHT_MODE_END = 6          # night mode end hour (24h)
+BRIGHTNESS_NIGHT = 8        # brightness during night (0-255)
+BRIGHTNESS_DAY = 30         # brightness during daytime (0-255)
+```
+
+### Temperature Display Range
+
+Adjust the temperature mapping to LED levels:
+```python
+TEMP_DISPLAY_MIN = 12       # minimum temperature for LED mapping (°C)
+TEMP_DISPLAY_MAX = 33       # maximum temperature for LED mapping (°C)
+```
+
+### API Token via Environment Variable
+
+You can set the API token via environment variable instead of editing `config.py`:
+```bash
+export CWA_AUTH_TOKEN='your-token-here'
+python3 Weather.py
+```
+
+### Demo Mode
+
+Enable debug/demo mode to see state information:
+```python
+DEMO_MODE = True  # set True to enable debug display mode
+```
     
 
 Troubleshooting

@@ -1,6 +1,4 @@
 #!/bin/bash
-# filepath: \8x8_desktopWeather\install.sh
-
 # Automated installation script for 8x8 Desktop Weather Display
 # Supports Raspberry Pi OS (PiOS) and DietPi
 # Run with: bash install.sh
@@ -18,8 +16,8 @@ else
     USER="$USER"
 fi
 
-PROJECT_DIR="$(pwd)"
-VENV_DIR="../pienv"
+PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+VENV_DIR="$(cd "$PROJECT_DIR/.." && pwd)/pienv"
 
 echo "Detected OS: $OS"
 echo "Project directory: $PROJECT_DIR"
@@ -37,13 +35,21 @@ cat requirements_system.txt | grep -v '^#' | grep -v '^$' | xargs sudo apt-get i
 
 # Step 3: Enable SPI (automated via config file)
 echo "Enabling SPI..."
-if [ -f /boot/config.txt ]; then
-    sudo sed -i 's/^#dtparam=spi=on/dtparam=spi=on/' /boot/config.txt
-    if ! grep -q "dtparam=spi=on" /boot/config.txt; then
-        echo "dtparam=spi=on" | sudo tee -a /boot/config.txt > /dev/null
+# Support both old (/boot/config.txt) and new (/boot/firmware/config.txt) Pi OS paths
+SPI_CONFIG=""
+if [ -f /boot/firmware/config.txt ]; then
+    SPI_CONFIG="/boot/firmware/config.txt"
+elif [ -f /boot/config.txt ]; then
+    SPI_CONFIG="/boot/config.txt"
+fi
+
+if [ -n "$SPI_CONFIG" ]; then
+    sudo sed -i 's/^#dtparam=spi=on/dtparam=spi=on/' "$SPI_CONFIG"
+    if ! grep -q "dtparam=spi=on" "$SPI_CONFIG"; then
+        echo "dtparam=spi=on" | sudo tee -a "$SPI_CONFIG" > /dev/null
     fi
 else
-    echo "Warning: /boot/config.txt not found. Please enable SPI manually."
+    echo "Warning: config.txt not found. Please enable SPI manually."
 fi
 
 # Step 4: Reboot notification (script will stop here; user must reboot and rerun)
@@ -107,8 +113,6 @@ sudo timedatectl set-timezone Asia/Taipei
 
 # Step 9: Create systemd service
 SERVICE_FILE="/etc/systemd/system/weather.service"
-VENV_DIR_ABS="$(cd "$VENV_DIR" && pwd)"
-PROJECT_DIR_ABS="$(cd "$PROJECT_DIR" && pwd)"
 echo "Creating systemd service..."
 sudo tee "$SERVICE_FILE" > /dev/null << EOF
 [Unit]
@@ -118,8 +122,8 @@ After=network.target
 [Service]
 Type=simple
 User=$USER
-WorkingDirectory=$PROJECT_DIR_ABS
-ExecStart=$VENV_DIR_ABS/bin/python3 $PROJECT_DIR_ABS/Weather.py
+WorkingDirectory=$PROJECT_DIR
+ExecStart=$VENV_DIR/bin/python3 $PROJECT_DIR/Weather.py
 Restart=always
 RestartSec=10
 

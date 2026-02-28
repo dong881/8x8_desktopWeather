@@ -2403,10 +2403,8 @@ def draw_solar_flare_animation(draw, frame):
                 draw.point((x + 1, y), fill="white")
 
 def draw_weather_animation(temperature_avg, pop_avg, frame):
-    """Draw weather animation based on temperature and precipitation with more detailed conditions"""
-    current_hour = datetime.now().hour
-    brightness = get_brightness_for_time(current_hour)
-    device.contrast(brightness)
+    """Draw weather animation based on temperature and precipitation with more detailed conditions."""
+    _set_brightness()
     
     with canvas(device) as draw:
         # Special weather conditions (rare but dramatic)
