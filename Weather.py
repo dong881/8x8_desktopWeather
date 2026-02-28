@@ -357,6 +357,7 @@ def temperature_to_led_levels(temperature):
     if temp_range == 0:
         return [4] * len(temperature)
     for t in temperature:
+        # Clamp temperature to display range [TEMP_DISPLAY_MIN, TEMP_DISPLAY_MAX]
         t = max(TEMP_DISPLAY_MIN, min(TEMP_DISPLAY_MAX, t))
         level = round(7 * (t - TEMP_DISPLAY_MIN) / temp_range)
         levels.append(level)
@@ -450,6 +451,7 @@ def calculate_output(hour):
     """
     if hour == 0:
         return 7
+    # Map hours 1-23 to columns: subtract 1 to make 0-based, divide by 3 for 3h periods, mod 8 for wrap
     return ((hour - 1) // 3) % 8
 
 
@@ -461,6 +463,7 @@ def calculate_output_forPoP(hour):
     """
     if hour == 0:
         return 7
+    # Map hours 1-23 to columns: subtract 1 for 0-based, divide by 6 for 6h periods, *2+1 for odd columns
     return ((hour - 1) // 6) * 2 + 1
 
 

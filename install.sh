@@ -31,7 +31,7 @@ sudo apt-get upgrade -y
 # Step 2: Install system dependencies
 echo "Installing system dependencies..."
 # Read system dependencies, filtering out comments and empty lines
-cat requirements_system.txt | grep -v '^#' | grep -v '^$' | xargs sudo apt-get install -y
+grep -v '^#' requirements_system.txt | grep -v '^$' | xargs sudo apt-get install -y
 
 # Step 3: Enable SPI (automated via config file)
 echo "Enabling SPI..."
