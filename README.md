@@ -42,7 +42,7 @@ This script handles system updates, dependencies, SPI setup, virtual environment
 
 2. **Install Dependencies**:
    ```bash
-   sudo apt-get install -y python3 python3-pip python3-dev python3-spidev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libopenjp2-7 libtiff5 build-essential git
+   sudo apt-get install -y python3 python3-pip python3-dev python3-spidev libjpeg-dev zlib1g-dev libfreetype6-dev liblcms2-dev libopenjp2-7 libtiff-dev build-essential git
    pip3 install -r requirements.txt
    ```
 
@@ -66,7 +66,7 @@ This script handles system updates, dependencies, SPI setup, virtual environment
 
 6. **Run Manually**:
    ```bash
-   python3 SmartWeather.py
+   python3 Weather.py
    ```
    Or create a service (see script for details).
 
@@ -123,11 +123,11 @@ Usage
 2.  Run the script by executing the following command:
     - used to test
     ```cmd=
-    python SmartWeather.py
+    python Weather.py
     ``` 
     - for long-term use
     ```cmd=
-    nohup python SmartWeather.py
+    nohup python Weather.py
     ``` 
     
 3.  The script will continuously retrieve the weather forecast data from the CWB API and display it on the LED matrix.

@@ -1,18 +1,27 @@
-# commands:
-# ps aux | grep SmartWeather.py
+# 8x8 Desktop Weather Display
+# Displays weather forecast on an 8x8 LED matrix (MAX7219)
 
 from luma.led_matrix.device import max7219
 from luma.core.interface.serial import spi, noop
 from luma.core.render import canvas
 import time
+import sys
+import signal
+import logging
 import requests
 from datetime import datetime, timedelta
-import sys
-import random
-# Import the configuration from config.py
+from urllib.parse import quote
 from config import WeatherAPI
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
+logger = logging.getLogger(__name__)
 
 # ============================================================
 # DISPLAY TIMING CONFIGURATION - 可自行調整以下設定
@@ -28,277 +37,363 @@ UPDATE_INTERVAL_MINS = 40   # minutes between weather data updates
 DEMO_MODE = False            # set True to enable debug/demo display mode
 # ============================================================
 
+# ============================================================
+# LOCATION & API CONFIGURATION - 可自行調整地點設定
+# ============================================================
+LOCATION_NAME = '大安區'                    # 地點名稱 (Location name)
+API_DATASET_TEMP = 'F-D0047-061'            # 溫度 API dataset ID
+API_DATASET_POP = 'F-D0047-091'             # 降雨機率 API dataset ID
+API_DATASET_POP_ALT = 'F-D0047-091'         # 備用降雨機率 API dataset ID
+API_TIMEOUT = 10                             # API request timeout (seconds)
+API_BASE_URL = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore'
+# ============================================================
+
+# ============================================================
+# TEMPERATURE DISPLAY RANGE - 溫度顯示範圍設定
+# ============================================================
+TEMP_DISPLAY_MIN = 12       # minimum temperature for LED level mapping (°C)
+TEMP_DISPLAY_MAX = 33       # maximum temperature for LED level mapping (°C)
+# ============================================================
+
+# ============================================================
+# BRIGHTNESS CONFIGURATION - 亮度設定
+# ============================================================
+NIGHT_MODE_START = 0        # night mode start hour (24h format)
+NIGHT_MODE_END = 6          # night mode end hour (24h format)
+BRIGHTNESS_NIGHT = 8        # brightness during night mode (0-255)
+BRIGHTNESS_DAY = 30         # brightness during daytime (0-255)
+MAX_CONTRAST = 255          # maximum contrast value for LED
+# ============================================================
+
+# ============================================================
+# DEFAULT FALLBACK DATA - 預設資料 (when API fails)
+# ============================================================
+DEFAULT_TEMPERATURE = 22    # default temperature (°C)
+DEFAULT_POP = 20            # default precipitation probability (%)
+DEFAULT_T_RAW = [DEFAULT_TEMPERATURE] * 8
+DEFAULT_POP_RAW = [DEFAULT_POP] * 4
+DEFAULT_T_LEVELS = [4] * 8
+DEFAULT_POP_LEVELS = [0] * 8
+DEFAULT_POP_LIST = ['20', '30', '25', '35', '40', '30', '25', '20']
+# ============================================================
+
 # Display mode constants
 MODE_BARGRAPH = 0
 MODE_TICKER = 1
 MODE_ICON = 2
 MODE_DEMO = 3               # demo/debug mode (only active when DEMO_MODE = True)
 
-# Access the Authorization value from the configuration
-Authorization = WeatherAPI['Authorization'].strip()  # Remove any whitespace
-if not Authorization or Authorization == '' or Authorization == 'CWA-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX':
-    print("=" * 60)
-    print("🌤️  Smart Weather Display Setup Required")
-    print("=" * 60)
-    print("Please configure your CWA authorization token:")
-    print("1. Visit: https://opendata.cwa.gov.tw/user/authkey")
-    print("2. Get your authorization token")
-    print("3. Edit config.py and add your token:")
-    print("   WeatherAPI = {'Authorization': 'YOUR_TOKEN_HERE'}")
-    print("=" * 60)
-    print("If you have already configured the token, please check config.py")
-    print("=" * 60)
-    print("🔗 Example API URLs (replace YOUR_TOKEN_HERE with actual token):")
-    TODAY_Date = datetime.now()
-    today = TODAY_Date.strftime('%Y-%m-%d')
-    tomorrow = (TODAY_Date + timedelta(days=1)).strftime('%Y-%m-%d')
-    NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
-    
-    temp_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization=YOUR_TOKEN_HERE&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    pop_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization=YOUR_TOKEN_HERE&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    print("Temperature API:", temp_url)
-    print("Precipitation API:", pop_url)
-    print("=" * 60)
-    exit()
-else:
-    print("=" * 60)
-    print("😊  Cute Weather Display Starting...")
-    print("=" * 60)
-    print("Token found! Skipping token input step.")
-    print("Starting with cute smiley animations! 🎉")
-    print("=" * 60)
-    
-    # Print API URLs for debugging
-    TODAY_Date = datetime.now()
-    today = TODAY_Date.strftime('%Y-%m-%d')
-    tomorrow = (TODAY_Date + timedelta(days=1)).strftime('%Y-%m-%d')
-    NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
-    
-    print("🔗 API URLs with token:")
-    print("Temperature API:")
-    temp_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    print(temp_url)
-    print("Precipitation API:")
-    pop_url = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    print(pop_url)
-    print("=" * 60)
+# Mode duration mapping (seconds)
+MODE_DURATIONS = {
+    MODE_BARGRAPH: BARGRAPH_DURATION,
+    MODE_TICKER: TICKER_DURATION,
+    MODE_ICON: ICON_DURATION,
+    MODE_DEMO: TICKER_DURATION,
+}
 
-# 定義函式，從交通部氣象局網站獲取當天天氣預報
-def get_weather_forecast(TODAY_Date):
-    # 獲取當天日期
-    delat = 0
-    today = (TODAY_Date+ timedelta(days=delat)).strftime('%Y-%m-%d')
-    tomorrow = (TODAY_Date+ timedelta(days=delat+1)).strftime('%Y-%m-%d')
-    print(today + " ~ " + tomorrow)
+# Mode name strings for logging
+MODE_NAMES = ['BARGRAPH', 'TICKER', 'ICON', 'DEMO']
+
+# Number of carousel modes
+NUM_MODES = 4 if DEMO_MODE else 3
+
+# Precipitation field name lookup priority
+POP_FIELD_NAMES = ['PoP6h', 'PoP', 'ProbabilityOfPrecipitation', 'Precipitation']
+
+# 3x5 pixel font for digit display
+DIGIT_FONT = {
+    '0': [[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
+    '1': [[0,1,0],[1,1,0],[0,1,0],[0,1,0],[1,1,1]],
+    '2': [[1,1,1],[0,0,1],[1,1,1],[1,0,0],[1,1,1]],
+    '3': [[1,1,1],[0,0,1],[1,1,1],[0,0,1],[1,1,1]],
+    '4': [[1,0,1],[1,0,1],[1,1,1],[0,0,1],[0,0,1]],
+    '5': [[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
+    '6': [[1,1,1],[1,0,0],[1,1,1],[1,0,1],[1,1,1]],
+    '7': [[1,1,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1]],
+    '8': [[1,1,1],[1,0,1],[1,1,1],[1,0,1],[1,1,1]],
+    '9': [[1,1,1],[1,0,1],[1,1,1],[0,0,1],[1,1,1]],
+    ' ': [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
+    '°': [[1,1,0],[1,1,0],[0,0,0],[0,0,0],[0,0,0]],
+    '%': [[1,0,1],[0,0,1],[0,1,0],[1,0,0],[1,0,1]],
+    '-': [[0,0,0],[0,0,0],[1,1,1],[0,0,0],[0,0,0]],
+    ':': [[0,0,0],[0,1,0],[0,0,0],[0,1,0],[0,0,0]],
+}
+
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
+
+def _format_hour(dt):
+    """Format hour from datetime as zero-padded string (e.g., '08')."""
+    return dt.strftime('%H')
+
+
+def _build_api_url(dataset_id, auth_token, element_name, date_from, hour_from, date_to, hour_to):
+    """Build a CWA weather API URL with the given parameters."""
+    location_encoded = quote(LOCATION_NAME)
+    return (
+        f'{API_BASE_URL}/{dataset_id}'
+        f'?Authorization={auth_token}'
+        f'&limit=8'
+        f'&LocationName={location_encoded}'
+        f'&elementName={element_name}'
+        f'&timeFrom={date_from}T{hour_from}%3A00%3A00'
+        f'&timeTo={date_to}T{hour_to}%3A00%3A00'
+    )
+
+
+def _validate_api_response(data):
+    """Validate CWA API response structure. Returns True if valid."""
+    return (
+        data.get("success") == "true"
+        and "records" in data
+        and "Locations" in data["records"]
+        and len(data["records"]["Locations"]) > 0
+        and "Location" in data["records"]["Locations"][0]
+        and len(data["records"]["Locations"][0]["Location"]) > 0
+    )
+
+
+def _extract_weather_data(data):
+    """Extract weather element time data from validated API response."""
+    return data["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
+
+
+def _extract_pop_value(element_value):
+    """Extract precipitation probability value from an element value dict.
     
-    NowTime = ("0" if(TODAY_Date.hour<10) else "" )+ str(TODAY_Date.hour)
-    print(NowTime)
+    Returns the precipitation value as string, or None if not found.
+    """
+    for field_name in POP_FIELD_NAMES:
+        if field_name in element_value:
+            return element_value[field_name]
+    return None
+
+
+def _validate_config():
+    """Validate and return the authorization token, or exit with instructions."""
+    auth = WeatherAPI['Authorization'].strip()
+    if not auth or auth == 'CWA-XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX':
+        logger.error("=" * 60)
+        logger.error("🌤️  Smart Weather Display Setup Required")
+        logger.error("=" * 60)
+        logger.error("Please configure your CWA authorization token:")
+        logger.error("1. Visit: https://opendata.cwa.gov.tw/user/authkey")
+        logger.error("2. Get your authorization token")
+        logger.error("3. Edit config.py and add your token:")
+        logger.error("   WeatherAPI = {'Authorization': 'YOUR_TOKEN_HERE'}")
+        logger.error("=" * 60)
+
+        now = datetime.now()
+        today = now.strftime('%Y-%m-%d')
+        tomorrow = (now + timedelta(days=1)).strftime('%Y-%m-%d')
+        hour_str = _format_hour(now)
+        temp_url = _build_api_url(API_DATASET_TEMP, 'YOUR_TOKEN_HERE', 'T', today, hour_str, tomorrow, hour_str)
+        pop_url = _build_api_url(API_DATASET_POP, 'YOUR_TOKEN_HERE', 'PoP6h', today, hour_str, tomorrow, hour_str)
+        logger.info("🔗 Example API URLs:")
+        logger.info("Temperature API: %s", temp_url)
+        logger.info("Precipitation API: %s", pop_url)
+        logger.error("=" * 60)
+        sys.exit(1)
+    return auth
+
+
+# ============================================================
+# CORE FUNCTIONS
+# ============================================================
+
+def get_weather_forecast(today_date):
+    """Fetch weather forecast from CWA API.
     
-    # 分別獲取溫度和降雨機率資料，避免資料結構問題
-    # 獲取溫度資料
-    url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    # 獲取降雨機率資料 - 使用正確的API端點
-    # 使用F-D0047-091 API for 鄉鎮市區預報 (包含降雨機率)
-    url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
-    # 備用降雨機率API (如果PoP6h不工作)
-    url_pop_alt = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=8&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP&timeFrom={today}T{NowTime}%3A00%3A00&timeTo={tomorrow}T{NowTime}%3A00%3A00'
+    Args:
+        today_date: datetime object for the forecast date.
+    
+    Returns:
+        Tuple of (temperature_levels, pop_levels, raw_temperatures, raw_pop_values).
+    """
+    today = today_date.strftime('%Y-%m-%d')
+    tomorrow = (today_date + timedelta(days=1)).strftime('%Y-%m-%d')
+    hour_str = _format_hour(today_date)
+    logger.info("%s ~ %s (hour: %s)", today, tomorrow, hour_str)
+    
+    # Build API URLs using helper
+    url_temp = _build_api_url(API_DATASET_TEMP, Authorization, 'T', today, hour_str, tomorrow, hour_str)
+    url_pop = _build_api_url(API_DATASET_POP, Authorization, 'PoP6h', today, hour_str, tomorrow, hour_str)
+    url_pop_alt = _build_api_url(API_DATASET_POP_ALT, Authorization, 'PoP', today, hour_str, tomorrow, hour_str)
     
     try:
-        # 獲取溫度資料
-        response_temp = requests.get(url_temp, verify=False, timeout=10)
+        # Fetch temperature data
+        response_temp = requests.get(url_temp, verify=False, timeout=API_TIMEOUT)
+        response_temp.raise_for_status()
         data_temp = response_temp.json()
         
-        # 檢查溫度資料是否有效
-        if (data_temp.get("success") == "true" and 
-            "records" in data_temp and 
-            "Locations" in data_temp["records"] and 
-            len(data_temp["records"]["Locations"]) > 0 and
-            "Location" in data_temp["records"]["Locations"][0] and
-            len(data_temp["records"]["Locations"][0]["Location"]) > 0):
-            
-            T_data = data_temp["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-            print("Temperature data:", T_data)
+        if _validate_api_response(data_temp):
+            T_data = _extract_weather_data(data_temp)
+            logger.info("Temperature data: %s", T_data)
         else:
-            print("Temperature API returned empty data, using fallback")
-            # 使用預設溫度資料
-            T_data = [{'ElementValue': [{'Temperature': '22'}]} for _ in range(8)]
+            logger.warning("Temperature API returned empty data, using fallback")
+            T_data = [{'ElementValue': [{'Temperature': str(DEFAULT_TEMPERATURE)}]} for _ in range(8)]
         
-        # 獲取降雨機率資料
-        response_pop = requests.get(url_pop, verify=False, timeout=10)
+        # Fetch precipitation data
+        response_pop = requests.get(url_pop, verify=False, timeout=API_TIMEOUT)
+        response_pop.raise_for_status()
         data_pop = response_pop.json()
-        print("Full PoP API response:", data_pop)
+        logger.debug("Full PoP API response: %s", data_pop)
         
-        # 檢查降雨機率資料是否有效
-        PoPdata = None
-        if (data_pop.get("success") == "true" and 
-            "records" in data_pop and 
-            "Locations" in data_pop["records"] and 
-            len(data_pop["records"]["Locations"]) > 0 and
-            "Location" in data_pop["records"]["Locations"][0] and
-            len(data_pop["records"]["Locations"][0]["Location"]) > 0):
-            
+        # Validate and extract precipitation data
+        pop_data = None
+        if _validate_api_response(data_pop):
             try:
-                PoPdata = data_pop["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-                print("Precipitation data:", PoPdata)
+                pop_data = _extract_weather_data(data_pop)
+                logger.info("Precipitation data: %s", pop_data)
                 
-                # 檢查是否真的包含降雨機率資料
-                has_precipitation_data = False
-                for d in PoPdata:
-                    element_value = d['ElementValue'][0]
-                    if any(key in element_value for key in ['PoP6h', 'PoP', 'Precipitation']):
-                        has_precipitation_data = True
-                        break
+                # Verify data actually contains precipitation fields
+                has_pop = any(
+                    _extract_pop_value(d['ElementValue'][0]) is not None
+                    for d in pop_data
+                )
                 
-                if not has_precipitation_data:
-                    print("Warning: PoP6h API returned no precipitation data, trying alternative endpoint...")
-                    # 嘗試備用API
-                    response_pop_alt = requests.get(url_pop_alt, verify=False, timeout=10)
-                    data_pop_alt = response_pop_alt.json()
-                    print("Alternative PoP API response:", data_pop_alt)
+                if not has_pop:
+                    logger.warning("PoP6h API returned no precipitation data, trying alternative...")
+                    pop_data = None
                     
-                    if (data_pop_alt.get("success") == "true" and 
-                        "records" in data_pop_alt and 
-                        "Locations" in data_pop_alt["records"] and 
-                        len(data_pop_alt["records"]["Locations"]) > 0 and
-                        "Location" in data_pop_alt["records"]["Locations"][0] and
-                        len(data_pop_alt["records"]["Locations"][0]["Location"]) > 0):
-                        PoPdata = data_pop_alt["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-                        print("Alternative precipitation data:", PoPdata)
-                    else:
-                        print("Alternative API also returned empty data")
-                        PoPdata = None
-                        
             except (KeyError, IndexError) as e:
-                print(f"Error accessing precipitation data: {e}")
-                PoPdata = None
+                logger.error("Error accessing precipitation data: %s", e)
+                pop_data = None
         else:
-            print("PoP API returned empty data, trying alternative endpoint...")
-            # 嘗試備用API
-            response_pop_alt = requests.get(url_pop_alt, verify=False, timeout=10)
-            data_pop_alt = response_pop_alt.json()
-            print("Alternative PoP API response:", data_pop_alt)
-            
-            if (data_pop_alt.get("success") == "true" and 
-                "records" in data_pop_alt and 
-                "Locations" in data_pop_alt["records"] and 
-                len(data_pop_alt["records"]["Locations"]) > 0 and
-                "Location" in data_pop_alt["records"]["Locations"][0] and
-                len(data_pop_alt["records"]["Locations"][0]["Location"]) > 0):
-                PoPdata = data_pop_alt["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"]
-                print("Alternative precipitation data:", PoPdata)
-            else:
-                print("Alternative API also returned empty data")
-                PoPdata = None
+            logger.warning("PoP API returned empty data, trying alternative...")
+            pop_data = None
         
-        # 從資料中提取出每個時間段的數值
-        TDataList = [list(d['ElementValue'][0].values())[0] for d in T_data]
-        print("Temperature values:", TDataList)
-        
-        # 處理降雨機率資料
-        PopDataList = []
-        if PoPdata:
-            print("Raw PoP data structure:", [d['ElementValue'] for d in PoPdata])
-            print("Available field names in PoP data:", [list(d['ElementValue'][0].keys()) for d in PoPdata])
-            
-            # Fix: Extract precipitation data correctly
-            for d in PoPdata:
-                element_value = d['ElementValue'][0]
-                print(f"Processing element value: {element_value}")
+        # Try alternative API if primary failed
+        if pop_data is None:
+            try:
+                response_pop_alt = requests.get(url_pop_alt, verify=False, timeout=API_TIMEOUT)
+                response_pop_alt.raise_for_status()
+                data_pop_alt = response_pop_alt.json()
+                logger.debug("Alternative PoP API response: %s", data_pop_alt)
                 
-                # Look for precipitation-related field names
-                if 'PoP6h' in element_value:
-                    PopDataList.append(element_value['PoP6h'])
-                    print(f"Found PoP6h data: {element_value['PoP6h']}")
-                elif 'PoP' in element_value:
-                    PopDataList.append(element_value['PoP'])
-                    print(f"Found PoP data: {element_value['PoP']}")
-                elif 'ProbabilityOfPrecipitation' in element_value:
-                    PopDataList.append(element_value['ProbabilityOfPrecipitation'])
-                    print(f"Found ProbabilityOfPrecipitation data: {element_value['ProbabilityOfPrecipitation']}")
-                elif 'Precipitation' in element_value:
-                    PopDataList.append(element_value['Precipitation'])
-                    print(f"Found Precipitation data: {element_value['Precipitation']}")
+                if _validate_api_response(data_pop_alt):
+                    pop_data = _extract_weather_data(data_pop_alt)
+                    logger.info("Alternative precipitation data: %s", pop_data)
                 else:
-                    # If no precipitation field found, check if it's temperature data
-                    if 'Temperature' in element_value:
-                        print(f"Warning: API returned temperature data instead of precipitation data: {element_value}")
-                        print("This indicates the API endpoint may be incorrect or the data structure has changed")
-                        # Use a default precipitation value based on temperature (rough estimation)
-                        temp_value = int(element_value['Temperature'])
-                        if temp_value > 30:
-                            PopDataList.append('20')  # Low chance of rain for hot weather
-                        elif temp_value > 25:
-                            PopDataList.append('30')  # Medium-low chance
-                        elif temp_value > 20:
-                            PopDataList.append('40')  # Medium chance
-                        else:
-                            PopDataList.append('60')  # Higher chance for cooler weather
-                        print(f"Using estimated precipitation value: {PopDataList[-1]}")
+                    logger.warning("Alternative API also returned empty data")
+            except (requests.RequestException, ValueError) as e:
+                logger.error("Alternative PoP API error: %s", e)
+        
+        # Extract temperature values
+        temp_values = []
+        for d in T_data:
+            ev = d['ElementValue'][0]
+            if 'Temperature' in ev:
+                temp_values.append(ev['Temperature'])
+            else:
+                temp_values.append(str(DEFAULT_TEMPERATURE))
+        logger.info("Temperature values: %s", temp_values)
+        
+        # Extract precipitation values
+        pop_values = []
+        if pop_data:
+            logger.debug("Raw PoP data structure: %s", [d['ElementValue'] for d in pop_data])
+            
+            for d in pop_data:
+                element_value = d['ElementValue'][0]
+                pop_val = _extract_pop_value(element_value)
+                
+                if pop_val is not None:
+                    pop_values.append(pop_val)
+                    logger.debug("Found precipitation data: %s", pop_val)
+                elif 'Temperature' in element_value:
+                    # API returned temperature data instead of precipitation
+                    logger.warning("API returned temperature instead of PoP: %s", element_value)
+                    temp_value = int(element_value['Temperature'])
+                    if temp_value > 30:
+                        pop_values.append('20')
+                    elif temp_value > 25:
+                        pop_values.append('30')
+                    elif temp_value > 20:
+                        pop_values.append('40')
                     else:
-                        # If no precipitation field found, use default value (0% chance)
-                        print(f"Warning: No precipitation data found in {element_value}, using default value 0")
-                        PopDataList.append('0')
+                        pop_values.append('60')
+                else:
+                    logger.warning("No precipitation data in %s, using default 0", element_value)
+                    pop_values.append('0')
         else:
-            print("No precipitation data available, using fallback values")
-            # 使用預設降雨機率資料
-            PopDataList = ['20', '30', '25', '35', '40', '30', '25', '20']
+            logger.warning("No precipitation data available, using fallback values")
+            pop_values = list(DEFAULT_POP_LIST)
         
-        print("Precipitation values:", PopDataList)
+        logger.info("Precipitation values: %s", pop_values)
         
-        return temperature_to_led_levels(TDataList), PoP_to_led_levels(PopDataList), [int(t) for t in TDataList], [int(p) for p in PopDataList]
+        return (
+            temperature_to_led_levels(temp_values),
+            PoP_to_led_levels(pop_values),
+            [int(t) for t in temp_values],
+            [int(p) for p in pop_values],
+        )
         
+    except requests.RequestException as e:
+        logger.error("Network error fetching weather data: %s", e)
+        return DEFAULT_T_LEVELS[:], DEFAULT_POP_LEVELS[:], DEFAULT_T_RAW[:], DEFAULT_POP_RAW[:]
+    except (ValueError, KeyError, IndexError) as e:
+        logger.error("Data parsing error: %s", e)
+        return DEFAULT_T_LEVELS[:], DEFAULT_POP_LEVELS[:], DEFAULT_T_RAW[:], DEFAULT_POP_RAW[:]
     except Exception as e:
-        print(f"Error fetching weather data: {e}")
-        # 返回預設值
-        return [4, 4, 4, 4, 4, 4, 4, 4], [0, 0, 0, 0, 0, 0, 0, 0], [22]*8, [20]*4
+        logger.error("Unexpected error fetching weather data: %s", e)
+        return DEFAULT_T_LEVELS[:], DEFAULT_POP_LEVELS[:], DEFAULT_T_RAW[:], DEFAULT_POP_RAW[:]
 
 
 
-# 定義函式，將溫度轉換為 8 階層，用於顯示在 8x8 矩陣上
 def temperature_to_led_levels(temperature):
-    # 將溫度轉換為整數
+    """Convert temperature values to 8 LED levels (0-7) for the 8x8 matrix.
+    
+    Args:
+        temperature: List of temperature values (strings or ints).
+    
+    Returns:
+        List of LED level values (0-7).
+    """
     temperature = [int(t) for t in temperature]
-
-    # 計算最大和最小值，用於將溫度轉換為 8 階層
-    temperature_min = 12
-    temperature_max = 33
-
-    # 將溫度轉換為 8 階層
     levels = []
+    temp_range = TEMP_DISPLAY_MAX - TEMP_DISPLAY_MIN
+    if temp_range == 0:
+        return [4] * len(temperature)
     for t in temperature:
-        if t>temperature_max: t = temperature_max
-        if t<temperature_min: t = temperature_min
-        level = round(7 * (t - temperature_min) / (temperature_max - temperature_min))
+        t = max(TEMP_DISPLAY_MIN, min(TEMP_DISPLAY_MAX, t))
+        level = round(7 * (t - TEMP_DISPLAY_MIN) / temp_range)
         levels.append(level)
     return levels
 
-# NowPoPvalue = -1
-def PoP_to_led_levels(Pop):
-    """Convert precipitation probability to LED levels with better scaling"""
+
+def PoP_to_led_levels(pop_values):
+    """Convert precipitation probability to LED indicator levels.
+    
+    Each PoP value produces 2 LED columns:
+    - >=80%: both lit (high probability)
+    - >=60%: first lit (medium-high)
+    - >=40%: second lit (medium)
+    - <40%:  both off (low probability)
+    
+    Args:
+        pop_values: List of precipitation probability values (strings or ints).
+    
+    Returns:
+        List of LED indicator values (0 or 1).
+    """
     try:
-        Pop = [int(t) for t in Pop]
+        pop_ints = [int(p) for p in pop_values]
         levels = []
-        # Use different thresholds for better visualization
-        for p in Pop:
-            if p >= 80:  # High probability
-                levels.append(1)
-                levels.append(1)
-            elif p >= 60:  # Medium-high probability
-                levels.append(1)
-                levels.append(0)
-            elif p >= 40:  # Medium probability
-                levels.append(0)
-                levels.append(1)
-            elif p >= 20:  # Low probability
-                levels.append(0)
-                levels.append(0)
-            else:  # Very low probability
-                levels.append(0)
-                levels.append(0)
+        for p in pop_ints:
+            if p >= 80:
+                levels.extend([1, 1])
+            elif p >= 60:
+                levels.extend([1, 0])
+            elif p >= 40:
+                levels.extend([0, 1])
+            else:
+                levels.extend([0, 0])
         return levels
-    except Exception as e:
-        print(f"Error in PoP_to_led_levels: {e}")
-        return [0, 0, 0, 0, 0, 0, 0, 0]
+    except (ValueError, TypeError) as e:
+        logger.error("Error in PoP_to_led_levels: %s", e)
+        return DEFAULT_POP_LEVELS[:]
 
 # initialize SPI interface for the LED matrix
 serial = spi(port=0, device=0)
@@ -306,79 +401,81 @@ device = max7219(serial, cascaded=1, block_orientation=0, rotate=0)
 
 
 def START_LOGO():
-    """Cute startup animation with smiley faces"""
-    # Show different cute smiley faces in sequence
+    """Cute startup animation with smiley faces."""
     smiley_animations = [
-        # Happy smiley
         lambda draw: draw_happy_smiley(draw, 0),
-        # Winking smiley
         lambda draw: draw_winking_smiley(draw, 0),
-        # Big smile smiley
         lambda draw: draw_big_smile_smiley(draw, 0),
-        # Excited smiley
-        lambda draw: draw_excited_smiley(draw, 0)
+        lambda draw: draw_excited_smiley(draw, 0),
     ]
     
-    for i, smiley_func in enumerate(smiley_animations):
+    for smiley_func in smiley_animations:
         with canvas(device) as draw:
             draw.rectangle(device.bounding_box, outline="white", fill="black")
             smiley_func(draw)
         time.sleep(0.8)
     
-    # Fade out effect
-    for intensity in list(range(15,0,-1)):
-        device.contrast(intensity * 16)
+    # Fade out/in effect
+    for intensity in range(15, 0, -1):
+        device.contrast(min(intensity * 16, MAX_CONTRAST))
         time.sleep(0.05)
     for intensity in range(16):
-        device.contrast(intensity * 16)
+        device.contrast(min(intensity * 16, MAX_CONTRAST))
         time.sleep(0.05)
 
 
 def shift_array(data, index):
+    """Shift array by index positions for display alignment.
+    
+    Args:
+        data: List of values to shift.
+        index: Number of positions to shift.
+    
+    Returns:
+        Shifted list, or empty list if input is empty.
+    """
+    if not data:
+        return []
     start = 8 - index
     end = start + 8
-    shifted_data = data[start:end] + data[:start] + data[end:]
-    # shifted_data.append(shifted_data.pop(0))
-    return shifted_data
+    return data[start:end] + data[:start] + data[end:]
+
 
 def calculate_output(hour):
-    if hour in [1, 2, 3]:
-        return 0
-    elif hour in [4, 5, 6]:
-        return 1
-    elif hour in [7, 8, 9]:
-        return 2
-    elif hour in [10, 11, 12]:
-        return 3
-    elif hour in [13, 14, 15]:
-        return 4
-    elif hour in [16, 17, 18]:
-        return 5
-    elif hour in [19, 20, 21]:
-        return 6
-    elif hour in [22, 23, 0]:
+    """Map hour (0-23) to temperature column index (0-7).
+    
+    Each column represents a 3-hour forecast period:
+    Col 0: 01-03h, Col 1: 04-06h, Col 2: 07-09h, Col 3: 10-12h,
+    Col 4: 13-15h, Col 5: 16-18h, Col 6: 19-21h, Col 7: 22-00h.
+    """
+    if hour == 0:
         return 7
-    else:
-        return 0
+    return ((hour - 1) // 3) % 8
+
 
 def calculate_output_forPoP(hour):
-    if hour in [1, 2, 3, 4, 5, 6]:
-        return 1
-    elif hour in [7, 8, 9, 10, 11, 12]:
-        return 3
-    elif hour in [13, 14, 15, 16, 17, 18]:
-        return 5
-    elif hour in [19, 20, 21, 22, 23, 0]:
+    """Map hour (0-23) to precipitation column index (1,3,5,7).
+    
+    Each column pair represents a 6-hour forecast period:
+    Col 1: 01-06h, Col 3: 07-12h, Col 5: 13-18h, Col 7: 19-00h.
+    """
+    if hour == 0:
         return 7
-    else:
-        return 0
+    return ((hour - 1) // 6) * 2 + 1
+
 
 def get_brightness_for_time(hour):
-    """Return brightness level based on time (night mode: 12 AM - 6 AM)"""
-    if 0 <= hour < 6:  # Night mode: 12 AM to 6 AM
-        return 8  # Darker brightness (range 0-255, using 8 for night)
-    else:
-        return 30  # Normal brightness
+    """Return brightness level based on time of day.
+    
+    Args:
+        hour: Hour in 24h format (0-23).
+    
+    Returns:
+        Brightness value (0-255).
+    """
+    if NIGHT_MODE_START <= hour < NIGHT_MODE_END:
+        return BRIGHTNESS_NIGHT
+    return BRIGHTNESS_DAY
 
 def draw_happy_smiley(draw, frame):
     """Draw a super cute happy smiley face"""
@@ -504,14 +601,15 @@ def draw_excited_smiley(draw, frame):
             draw.point((x, y), fill="white")
 
 def show_data_update_animation():
-    """Simple minimal update indicator"""
+    """Simple minimal update indicator - horizontal scan line."""
     for x in range(8):
         with canvas(device) as draw:
             draw.point((x, 3), fill="white")
             draw.point((x, 4), fill="white")
         time.sleep(0.08)
+    # Clear display
     with canvas(device) as draw:
-        pass  # clear display
+        draw.rectangle(device.bounding_box, fill="black")
 
 def draw_sunny_animation(draw, frame):
     """Draw super cute sunny weather animation - big smiling sun with animated rays and sparkles"""
@@ -2528,53 +2626,48 @@ def draw_umbrella_icon(draw, frame=0):
 
 
 def draw_digit(draw, digit, x_offset, y_offset):
-    """Draw a single digit (0-9) in 3x5 pixel font"""
-    digits = {
-        '0': [[1,1,1],[1,0,1],[1,0,1],[1,0,1],[1,1,1]],
-        '1': [[0,1,0],[1,1,0],[0,1,0],[0,1,0],[1,1,1]],
-        '2': [[1,1,1],[0,0,1],[1,1,1],[1,0,0],[1,1,1]],
-        '3': [[1,1,1],[0,0,1],[1,1,1],[0,0,1],[1,1,1]],
-        '4': [[1,0,1],[1,0,1],[1,1,1],[0,0,1],[0,0,1]],
-        '5': [[1,1,1],[1,0,0],[1,1,1],[0,0,1],[1,1,1]],
-        '6': [[1,1,1],[1,0,0],[1,1,1],[1,0,1],[1,1,1]],
-        '7': [[1,1,1],[0,0,1],[0,0,1],[0,0,1],[0,0,1]],
-        '8': [[1,1,1],[1,0,1],[1,1,1],[1,0,1],[1,1,1]],
-        '9': [[1,1,1],[1,0,1],[1,1,1],[0,0,1],[1,1,1]],
-        ' ': [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
-        '°': [[1,1,0],[1,1,0],[0,0,0],[0,0,0],[0,0,0]],
-        '%': [[1,0,1],[0,0,1],[0,1,0],[1,0,0],[1,0,1]],
-        '-': [[0,0,0],[0,0,0],[1,1,1],[0,0,0],[0,0,0]],
-        ':': [[0,0,0],[0,1,0],[0,0,0],[0,1,0],[0,0,0]],
-    }
+    """Draw a single digit/character in 3x5 pixel font.
     
-    if digit in digits:
-        pattern = digits[digit]
+    Args:
+        draw: PIL ImageDraw object.
+        digit: Character to draw (0-9, space, °, %, -, :).
+        x_offset: X position on the 8x8 matrix.
+        y_offset: Y position on the 8x8 matrix.
+    """
+    if digit in DIGIT_FONT:
+        pattern = DIGIT_FONT[digit]
         for y, row in enumerate(pattern):
             for x, pixel in enumerate(row):
                 if pixel:
                     draw.point((x_offset + x, y_offset + y), fill="white")
 
-def display_ticker(temp_max, temp_min, pop_max, scroll_offset):
-    """Display scrolling ticker: 'HH-LL PP%'"""
+
+def _set_brightness():
+    """Set LED brightness based on current time of day."""
     current_hour = datetime.now().hour
     brightness = get_brightness_for_time(current_hour)
     device.contrast(brightness)
+
+
+def display_ticker(temp_max, temp_min, pop_max, scroll_offset):
+    """Display scrolling ticker showing temperature range and precipitation.
     
-    # Build the message: "28-18 30%"
+    Format: 'HH-LL PP%' (e.g., '28-18 30%')
+    """
+    _set_brightness()
     message = f"{temp_max}-{temp_min} {pop_max}%"
     
     with canvas(device) as draw:
         x_pos = 8 - scroll_offset
         for char in message:
-            if x_pos >= -3 and x_pos < 8:
+            if -3 <= x_pos < 8:
                 draw_digit(draw, char, x_pos, 1)
             x_pos += 4
 
+
 def display_icon(temp_max, temp_min, pop_max, frame):
-    """Display animated weather icon based on 24h forecast"""
-    current_hour = datetime.now().hour
-    brightness = get_brightness_for_time(current_hour)
-    device.contrast(brightness)
+    """Display animated weather icon based on 24h forecast."""
+    _set_brightness()
     
     with canvas(device) as draw:
         if pop_max >= 50:
@@ -2584,183 +2677,232 @@ def display_icon(temp_max, temp_min, pop_max, frame):
         else:
             draw_sun_icon(draw, frame)
 
-def display_demo(carousel_mode, temp_max, temp_min, pop_max, sec_elapsed, IndexCol, scroll_offset):
-    """Demo/debug mode: scroll a status message showing key state variables"""
-    current_hour = datetime.now().hour
-    brightness = get_brightness_for_time(current_hour)
-    device.contrast(brightness)
-    # Format: "M:3 T:28-18 P:30% C:3" — M: shows actual mode number (3 = demo mode)
-    message = f"M:{carousel_mode} T:{temp_max}-{temp_min} P:{pop_max}% C:{IndexCol}"
+
+def display_demo(carousel_mode, temp_max, temp_min, pop_max, sec_elapsed, index_col, scroll_offset):
+    """Demo/debug mode: scroll a status message showing key state variables.
+    
+    Format: 'M:3 T:28-18 P:30% C:3'
+    """
+    _set_brightness()
+    message = f"M:{carousel_mode} T:{temp_max}-{temp_min} P:{pop_max}% C:{index_col}"
     with canvas(device) as draw:
         x_pos = 8 - scroll_offset
         for char in message:
-            if x_pos >= -3 and x_pos < 8:
+            if -3 <= x_pos < 8:
                 draw_digit(draw, char, x_pos, 1)
             x_pos += 4
 
-def display_heights(scan_step, heights, PoP_format, IndexCol):
-    """Display bargraph.
-    scan_step 0-7: current column scans bottom-to-top (all others show normal).
-    scan_step >= 8: show full normal bargraph.
+
+def display_heights(scan_step, heights, pop_format, index_col):
+    """Display bargraph with scan animation for current time period.
+    
+    Args:
+        scan_step: 0-7 for scan animation, >=8 for normal display.
+        heights: List of 8 temperature bar heights.
+        pop_format: List of 8 precipitation indicator values.
+        index_col: Current time period column index.
     """
-    current_hour = datetime.now().hour
-    brightness = get_brightness_for_time(current_hour)
-    device.contrast(brightness)
+    _set_brightness()
     
     with canvas(device) as draw:
         for i in range(8):
-            if i == IndexCol and scan_step < 8:
+            if i == index_col and scan_step < 8:
                 # Scan animation: light up rows from bottom (7) upward
-                # scan_step=0 lights row 7 only, scan_step=7 lights all rows
-                for row in range(7, 7 - scan_step - 1, -1):
+                for row in range(7, max(7 - scan_step - 1, -1), -1):
                     draw.point((i, row), fill="white")
             else:
                 # Normal bargraph column
-                height = heights[i]
+                height = heights[i] if i < len(heights) else 0
                 for j in range(height):
-                    draw.point((i, 7-j-1), fill="white")
-                if PoP_format[i] == 1:
+                    draw.point((i, 7 - j - 1), fill="white")
+                if i < len(pop_format) and pop_format[i] == 1:
                     draw.point((i, 7), fill="white")
-# START_LOGO()
 
-# ---- Main state ----
-sec = UPDATE_INTERVAL_MINS * 60 + 1   # set > interval so first iteration triggers update immediately
-T_format = []
-PoP_format = []
-T_raw = [22] * 8
-PoP_raw = [20] * 4
-temp_max = 25
-temp_min = 18
-pop_max = 20
 
-carousel_mode = MODE_BARGRAPH
-carousel_timer = 0.0
-animation_frame = 0
-ticker_scroll = 0
-ticker_completed_cycle = False  # ensures ticker always finishes at least one full pass
+# ============================================================
+# SIGNAL HANDLING & CLEANUP
+# ============================================================
 
-# Scan state for bargraph (replaces old blink_phase)
-# scan_step 0-7 = bottom-to-top scan on current column; >= 8 = normal display
-scan_step = 0
-blink_timer = 0.0
+_running = True
 
-# Demo mode scroll state
-demo_scroll = 0
-demo_completed_cycle = False
 
-IndexCol = 0
-PoPIndexCol = 0
+def _signal_handler(signum, frame):
+    """Handle shutdown signals gracefully."""
+    global _running
+    logger.info("Received signal %s, shutting down...", signum)
+    _running = False
 
-# How many carousel slots: 3 normally, 4 when DEMO_MODE is on
-_NUM_MODES = 4 if DEMO_MODE else 3
-_MODE_NAMES = ['BARGRAPH', 'TICKER', 'ICON', 'DEMO']
 
-while True:
-    try:
-        # --- Weather data update ---
-        if sec >= UPDATE_INTERVAL_MINS * 60:
-            TODAY_Date = datetime.now()
-            thisHour = TODAY_Date.hour
-            print(f"Updating weather data at {thisHour}:00")
-            show_data_update_animation()
-            result = get_weather_forecast(TODAY_Date)
-            T_format, PoP_format, T_raw, PoP_raw = result
-            IndexCol = calculate_output(thisHour)
-            PoPIndexCol = calculate_output_forPoP(thisHour)
-            T_format = shift_array(T_format, IndexCol)
-            PoP_format = shift_array(PoP_format, PoPIndexCol)
-            # Calculate max/min temp and max PoP for next 24h
-            if T_raw:
-                temp_max = max(T_raw)
-                temp_min = min(T_raw)
-            if PoP_raw:
-                pop_max = max(PoP_raw)
-            print(f"Temp max={temp_max} min={temp_min}, PoP max={pop_max}%")
-            if DEMO_MODE:
-                print(f"[DEMO] IndexCol={IndexCol} PoPIndexCol={PoPIndexCol} "
-                      f"T_format={T_format} PoP_format={PoP_format}")
-            sec = 0
+signal.signal(signal.SIGTERM, _signal_handler)
+signal.signal(signal.SIGINT, _signal_handler)
 
-        # --- Mode switching ---
-        mode_duration = {
-            MODE_BARGRAPH: BARGRAPH_DURATION,
-            MODE_TICKER: TICKER_DURATION,
-            MODE_ICON: ICON_DURATION,
-            MODE_DEMO: TICKER_DURATION,
-        }
-        can_switch = carousel_timer >= mode_duration.get(carousel_mode, TICKER_DURATION)
-        # Ticker and demo modes must complete at least one full scroll cycle first
-        if carousel_mode == MODE_TICKER:
-            can_switch = can_switch and ticker_completed_cycle
-        if carousel_mode == MODE_DEMO:
-            can_switch = can_switch and demo_completed_cycle
-        if can_switch:
-            carousel_timer = 0.0
-            carousel_mode = (carousel_mode + 1) % _NUM_MODES
-            ticker_scroll = 0
-            ticker_completed_cycle = False
-            demo_scroll = 0
-            demo_completed_cycle = False
-            scan_step = 0
-            blink_timer = 0.0
-            print(f"Switching to mode: {_MODE_NAMES[carousel_mode]}")
-            if DEMO_MODE:
-                print(f"[DEMO] State — temp_max={temp_max} temp_min={temp_min} "
-                      f"pop_max={pop_max}% IndexCol={IndexCol} sec_elapsed={int(sec)}")
 
-        # --- Display current mode ---
-        if carousel_mode == MODE_BARGRAPH:
-            # scan_step 0-7: bottom-to-top scan on current column (BARGRAPH_SCAN_SPEED each step)
-            # scan_step 8: normal full display for BLINK_LONG_SECS, then reset
-            if scan_step < 8:
-                sleep_t = BARGRAPH_SCAN_SPEED
-            else:
-                sleep_t = BLINK_LONG_SECS
-            display_heights(scan_step, T_format, PoP_format, IndexCol)
-            time.sleep(sleep_t)
-            blink_timer += sleep_t
-            carousel_timer += sleep_t
-            sec += sleep_t
-            scan_step += 1
-            if scan_step > 8:   # 8 scan steps (0-7) + 1 normal-display step (8)
-                scan_step = 0
+# ============================================================
+# MAIN LOOP
+# ============================================================
 
-        elif carousel_mode == MODE_TICKER:
-            # Build ticker message to calculate total scroll width
-            message = f"{temp_max}-{temp_min} {pop_max}%"
-            ticker_total_width = len(message) * 4 + 8
-            display_ticker(temp_max, temp_min, pop_max, ticker_scroll)
-            ticker_scroll += 1
-            if ticker_scroll >= ticker_total_width:
+def main():
+    """Main application entry point."""
+    global _running
+    
+    # Validate configuration
+    auth = _validate_config()
+    # Store auth in module scope for get_weather_forecast
+    global Authorization
+    Authorization = auth
+    
+    logger.info("=" * 60)
+    logger.info("😊  Cute Weather Display Starting...")
+    logger.info("=" * 60)
+    logger.info("Token found! Starting with cute smiley animations! 🎉")
+    logger.info("Location: %s", LOCATION_NAME)
+    logger.info("=" * 60)
+    
+    # Print API URLs for debugging
+    now = datetime.now()
+    today = now.strftime('%Y-%m-%d')
+    tomorrow = (now + timedelta(days=1)).strftime('%Y-%m-%d')
+    hour_str = _format_hour(now)
+    
+    temp_url = _build_api_url(API_DATASET_TEMP, Authorization, 'T', today, hour_str, tomorrow, hour_str)
+    pop_url = _build_api_url(API_DATASET_POP, Authorization, 'PoP6h', today, hour_str, tomorrow, hour_str)
+    logger.info("🔗 API URLs:")
+    logger.info("Temperature: %s", temp_url)
+    logger.info("Precipitation: %s", pop_url)
+    logger.info("=" * 60)
+    
+    # Show startup logo
+    # START_LOGO()
+    
+    # ---- Main state ----
+    sec = UPDATE_INTERVAL_MINS * 60 + 1  # force immediate update on first iteration
+    t_format = []
+    pop_format = []
+    t_raw = DEFAULT_T_RAW[:]
+    pop_raw = DEFAULT_POP_RAW[:]
+    temp_max = 25
+    temp_min = 18
+    pop_max = DEFAULT_POP
+    
+    carousel_mode = MODE_BARGRAPH
+    carousel_timer = 0.0
+    animation_frame = 0
+    ticker_scroll = 0
+    ticker_completed_cycle = False
+    
+    # Scan state for bargraph
+    scan_step = 0
+    blink_timer = 0.0
+    
+    # Demo mode scroll state
+    demo_scroll = 0
+    demo_completed_cycle = False
+    
+    index_col = 0
+    pop_index_col = 0
+    
+    while _running:
+        try:
+            # --- Weather data update ---
+            if sec >= UPDATE_INTERVAL_MINS * 60:
+                now = datetime.now()
+                this_hour = now.hour
+                logger.info("Updating weather data at %02d:00", this_hour)
+                show_data_update_animation()
+                result = get_weather_forecast(now)
+                t_format, pop_format, t_raw, pop_raw = result
+                index_col = calculate_output(this_hour)
+                pop_index_col = calculate_output_forPoP(this_hour)
+                t_format = shift_array(t_format, index_col)
+                pop_format = shift_array(pop_format, pop_index_col)
+                if t_raw:
+                    temp_max = max(t_raw)
+                    temp_min = min(t_raw)
+                if pop_raw:
+                    pop_max = max(pop_raw)
+                logger.info("Temp max=%d min=%d, PoP max=%d%%", temp_max, temp_min, pop_max)
+                if DEMO_MODE:
+                    logger.debug("[DEMO] IndexCol=%d PoPIndexCol=%d T_format=%s PoP_format=%s",
+                                 index_col, pop_index_col, t_format, pop_format)
+                sec = 0
+
+            # --- Mode switching ---
+            can_switch = carousel_timer >= MODE_DURATIONS.get(carousel_mode, TICKER_DURATION)
+            if carousel_mode == MODE_TICKER:
+                can_switch = can_switch and ticker_completed_cycle
+            if carousel_mode == MODE_DEMO:
+                can_switch = can_switch and demo_completed_cycle
+            if can_switch:
+                carousel_timer = 0.0
+                carousel_mode = (carousel_mode + 1) % NUM_MODES
                 ticker_scroll = 0
-                ticker_completed_cycle = True   # full cycle done; mode switch now allowed
-            time.sleep(TICKER_SCROLL_SPEED)
-            carousel_timer += TICKER_SCROLL_SPEED
-            sec += TICKER_SCROLL_SPEED
-
-        elif carousel_mode == MODE_ICON:
-            animation_frame += 1
-            display_icon(temp_max, temp_min, pop_max, animation_frame)
-            time.sleep(ICON_ANIMATION_SPEED)
-            carousel_timer += ICON_ANIMATION_SPEED
-            sec += ICON_ANIMATION_SPEED
-
-        elif carousel_mode == MODE_DEMO:
-            # Scrolling debug status: only active when DEMO_MODE = True
-            # Message format must match the one built inside display_demo()
-            demo_message = f"M:{carousel_mode} T:{temp_max}-{temp_min} P:{pop_max}% C:{IndexCol}"
-            demo_total_width = len(demo_message) * 4 + 8
-            display_demo(carousel_mode, temp_max, temp_min, pop_max, sec, IndexCol, demo_scroll)
-            demo_scroll += 1
-            if demo_scroll >= demo_total_width:
+                ticker_completed_cycle = False
                 demo_scroll = 0
-                demo_completed_cycle = True
-            time.sleep(TICKER_SCROLL_SPEED)
-            carousel_timer += TICKER_SCROLL_SPEED
-            sec += TICKER_SCROLL_SPEED
+                demo_completed_cycle = False
+                scan_step = 0
+                blink_timer = 0.0
+                animation_frame = 0
+                logger.info("Switching to mode: %s", MODE_NAMES[carousel_mode])
+                if DEMO_MODE:
+                    logger.debug("[DEMO] State — temp_max=%d temp_min=%d pop_max=%d%% "
+                                 "IndexCol=%d sec_elapsed=%d",
+                                 temp_max, temp_min, pop_max, index_col, int(sec))
 
-    except Exception as e:
-        print(f"Error: {e}")
-        time.sleep(1)
-        sec += 1
+            # --- Display current mode ---
+            if carousel_mode == MODE_BARGRAPH:
+                sleep_t = BARGRAPH_SCAN_SPEED if scan_step < 8 else BLINK_LONG_SECS
+                display_heights(scan_step, t_format, pop_format, index_col)
+                time.sleep(sleep_t)
+                blink_timer += sleep_t
+                carousel_timer += sleep_t
+                sec += sleep_t
+                scan_step += 1
+                if scan_step > 8:
+                    scan_step = 0
+
+            elif carousel_mode == MODE_TICKER:
+                message = f"{temp_max}-{temp_min} {pop_max}%"
+                ticker_total_width = len(message) * 4 + 8
+                display_ticker(temp_max, temp_min, pop_max, ticker_scroll)
+                ticker_scroll += 1
+                if ticker_scroll >= ticker_total_width:
+                    ticker_scroll = 0
+                    ticker_completed_cycle = True
+                time.sleep(TICKER_SCROLL_SPEED)
+                carousel_timer += TICKER_SCROLL_SPEED
+                sec += TICKER_SCROLL_SPEED
+
+            elif carousel_mode == MODE_ICON:
+                animation_frame += 1
+                display_icon(temp_max, temp_min, pop_max, animation_frame)
+                time.sleep(ICON_ANIMATION_SPEED)
+                carousel_timer += ICON_ANIMATION_SPEED
+                sec += ICON_ANIMATION_SPEED
+
+            elif carousel_mode == MODE_DEMO:
+                demo_message = f"M:{carousel_mode} T:{temp_max}-{temp_min} P:{pop_max}% C:{index_col}"
+                demo_total_width = len(demo_message) * 4 + 8
+                display_demo(carousel_mode, temp_max, temp_min, pop_max, sec, index_col, demo_scroll)
+                demo_scroll += 1
+                if demo_scroll >= demo_total_width:
+                    demo_scroll = 0
+                    demo_completed_cycle = True
+                time.sleep(TICKER_SCROLL_SPEED)
+                carousel_timer += TICKER_SCROLL_SPEED
+                sec += TICKER_SCROLL_SPEED
+
+        except Exception as e:
+            logger.error("Main loop error: %s", e)
+            time.sleep(1)
+            sec += 1
+    
+    # Cleanup on exit
+    logger.info("Shutting down display...")
+    with canvas(device) as draw:
+        draw.rectangle(device.bounding_box, fill="black")
+    logger.info("Goodbye!")
+
+
+if __name__ == '__main__':
+    main()
 
