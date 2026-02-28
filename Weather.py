@@ -14,12 +14,25 @@ from config import WeatherAPI
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# Carousel mode constants
-MODE_ANIMATION = 0
+# ============================================================
+# DISPLAY TIMING CONFIGURATION - 可自行調整以下設定
+# ============================================================
+BARGRAPH_DURATION = 15      # seconds for bar graph display (秒)
+TICKER_DURATION = 20        # seconds for ticker scrolling (秒)
+ICON_DURATION = 10          # seconds for icon display (秒)
+BARGRAPH_SCAN_SPEED = 0.09  # seconds per scan step in column indicator animation
+BLINK_LONG_SECS = 1.5       # seconds for normal bargraph display phase (after scan)
+TICKER_SCROLL_SPEED = 0.10  # seconds between ticker scroll steps (slightly faster)
+ICON_ANIMATION_SPEED = 0.5  # seconds between icon animation frames
+UPDATE_INTERVAL_MINS = 40   # minutes between weather data updates
+DEMO_MODE = False            # set True to enable debug/demo display mode
+# ============================================================
+
+# Display mode constants
+MODE_BARGRAPH = 0
 MODE_TICKER = 1
-MODE_BARGRAPH = 2
-CAROUSEL_DURATION = 15  # seconds per mode (increased for better viewing)
-TICKER_FULL_CYCLE = 80  # frames for complete ticker scroll
+MODE_ICON = 2
+MODE_DEMO = 3               # demo/debug mode (only active when DEMO_MODE = True)
 
 # Access the Authorization value from the configuration
 Authorization = WeatherAPI['Authorization'].strip()  # Remove any whitespace
@@ -232,12 +245,12 @@ def get_weather_forecast(TODAY_Date):
         
         print("Precipitation values:", PopDataList)
         
-        return temperature_to_led_levels(TDataList), PoP_to_led_levels(PopDataList)
+        return temperature_to_led_levels(TDataList), PoP_to_led_levels(PopDataList), [int(t) for t in TDataList], [int(p) for p in PopDataList]
         
     except Exception as e:
         print(f"Error fetching weather data: {e}")
         # 返回預設值
-        return [4, 4, 4, 4, 4, 4, 4, 4], [0, 0, 0, 0, 0, 0, 0, 0]
+        return [4, 4, 4, 4, 4, 4, 4, 4], [0, 0, 0, 0, 0, 0, 0, 0], [22]*8, [20]*4
 
 
 
@@ -491,80 +504,14 @@ def draw_excited_smiley(draw, frame):
             draw.point((x, y), fill="white")
 
 def show_data_update_animation():
-    """Show cute smiley animation while updating weather data"""
-    update_animations = [
-        # Thinking smiley
-        lambda draw: draw_thinking_smiley(draw, 0),
-        # Loading smiley
-        lambda draw: draw_loading_smiley(draw, 0),
-        # Success smiley
-        lambda draw: draw_success_smiley(draw, 0)
-    ]
-    
-    for i, anim_func in enumerate(update_animations):
+    """Simple minimal update indicator"""
+    for x in range(8):
         with canvas(device) as draw:
-            draw.rectangle(device.bounding_box, outline="white", fill="black")
-            anim_func(draw)
-        time.sleep(0.5)
-
-def draw_thinking_smiley(draw, frame):
-    """Draw a thinking smiley face"""
-    # Face outline
-    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
-    # Eyes looking up (thinking)
-    draw.point((2, 1), fill="black")
-    draw.point((5, 1), fill="black")
-    # Thinking mouth (straight line)
-    draw.point((2, 4), fill="black")
-    draw.point((3, 4), fill="black")
-    draw.point((4, 4), fill="black")
-    draw.point((5, 4), fill="black")
-    # Question mark above head
-    draw.point((7, 0), fill="white")
-    draw.point((7, 1), fill="white")
-    draw.point((7, 2), fill="white")
-    draw.point((6, 3), fill="white")
-
-def draw_loading_smiley(draw, frame):
-    """Draw a loading smiley face with spinning effect"""
-    # Face outline
-    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
-    # Eyes
-    draw.point((2, 2), fill="black")
-    draw.point((5, 2), fill="black")
-    # Loading mouth (dots)
-    if frame % 2 == 0:
-        draw.point((3, 4), fill="black")
-        draw.point((4, 4), fill="black")
-    else:
-        draw.point((2, 4), fill="black")
-        draw.point((5, 4), fill="black")
-    # Spinning dots around face
-    angle = frame % 8
-    if angle < 4:
-        draw.point((0, 2 + angle), fill="white")
-    else:
-        draw.point((7, 2 + (angle - 4)), fill="white")
-
-def draw_success_smiley(draw, frame):
-    """Draw a success smiley face with checkmark"""
-    # Face outline
-    draw.ellipse([(1, 1), (6, 6)], outline="white", fill="white")
-    # Happy eyes
-    draw.point((2, 2), fill="black")
-    draw.point((5, 2), fill="black")
-    # Big happy smile
-    draw.point((1, 4), fill="black")
-    draw.point((2, 5), fill="black")
-    draw.point((3, 6), fill="black")
-    draw.point((4, 6), fill="black")
-    draw.point((5, 5), fill="black")
-    draw.point((6, 4), fill="black")
-    # Checkmark
-    draw.point((7, 1), fill="white")
-    draw.point((7, 2), fill="white")
-    draw.point((6, 3), fill="white")
-    draw.point((5, 4), fill="white")
+            draw.point((x, 3), fill="white")
+            draw.point((x, 4), fill="white")
+        time.sleep(0.08)
+    with canvas(device) as draw:
+        pass  # clear display
 
 def draw_sunny_animation(draw, frame):
     """Draw super cute sunny weather animation - big smiling sun with animated rays and sparkles"""
@@ -2513,6 +2460,73 @@ def draw_weather_animation(temperature_avg, pop_avg, frame):
             # Earthquake (very rare)
             draw_earthquake_animation(draw, frame)
 
+def draw_sun_icon(draw, frame=0):
+    """Animated sun icon: center block with alternating cardinal/diagonal ray dots"""
+    # Center circle (4x4 at positions 2-5)
+    for y in range(2, 6):
+        for x in range(2, 6):
+            draw.point((x, y), fill="white")
+    # Alternate between cardinal directions and diagonal directions each frame
+    if frame % 2 == 0:
+        # Cardinal directions (N, E, S, W)
+        draw.point((3, 0), fill="white")
+        draw.point((4, 0), fill="white")
+        draw.point((7, 3), fill="white")
+        draw.point((7, 4), fill="white")
+        draw.point((4, 7), fill="white")
+        draw.point((3, 7), fill="white")
+        draw.point((0, 4), fill="white")
+        draw.point((0, 3), fill="white")
+    else:
+        # Diagonal directions (NE, SE, SW, NW)
+        draw.point((7, 1), fill="white")
+        draw.point((7, 6), fill="white")
+        draw.point((0, 6), fill="white")
+        draw.point((0, 1), fill="white")
+
+def draw_cloud_icon(draw, frame=0):
+    """Animated cloud icon: gently drifts left and right"""
+    # Drift pattern: 0, +1, +1, 0, 0, -1, -1, 0 repeating
+    drift_pattern = [0, 1, 1, 0, 0, -1, -1, 0]
+    dx = drift_pattern[frame % 8]
+    cloud_pixels = [
+        (2,0),(3,0),(4,0),
+        (1,1),(2,1),(3,1),(4,1),(5,1),(6,1),
+        (0,2),(1,2),(2,2),(3,2),(4,2),(5,2),(6,2),(7,2),
+        (0,3),(1,3),(2,3),(3,3),(4,3),(5,3),(6,3),(7,3),
+        (1,4),(2,4),(3,4),(4,4),(5,4),(6,4),
+    ]
+    for (x, y) in cloud_pixels:
+        nx = x + dx
+        if 0 <= nx <= 7:
+            draw.point((nx, y), fill="white")
+
+def draw_umbrella_icon(draw, frame=0):
+    """Animated umbrella icon: raindrops fall with staggered phase per column"""
+    # Static umbrella canopy
+    canopy = [
+        (1,0),(2,0),(3,0),(4,0),(5,0),(6,0),
+        (0,1),(1,1),(2,1),(3,1),(4,1),(5,1),(6,1),(7,1),
+        (0,2),(7,2),
+    ]
+    for (x, y) in canopy:
+        draw.point((x, y), fill="white")
+    # Stem
+    draw.point((3, 3), fill="white")
+    draw.point((3, 4), fill="white")
+    draw.point((3, 5), fill="white")
+    # Handle curve
+    draw.point((3, 6), fill="white")
+    draw.point((2, 7), fill="white")
+    # Animated raindrops: 4 columns, each column has a phase offset so they stagger
+    rain_cols = [0, 2, 5, 7]
+    for i, col in enumerate(rain_cols):
+        # Each column's drop y cycles 3..7, with a phase offset per column
+        drop_y = (frame + i * 2) % 5 + 3
+        if 3 <= drop_y <= 7:
+            draw.point((col, drop_y), fill="white")
+
+
 def draw_digit(draw, digit, x_offset, y_offset):
     """Draw a single digit (0-9) in 3x5 pixel font"""
     digits = {
@@ -2529,6 +2543,8 @@ def draw_digit(draw, digit, x_offset, y_offset):
         ' ': [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]],
         '°': [[1,1,0],[1,1,0],[0,0,0],[0,0,0],[0,0,0]],
         '%': [[1,0,1],[0,0,1],[0,1,0],[1,0,0],[1,0,1]],
+        '-': [[0,0,0],[0,0,0],[1,1,1],[0,0,0],[0,0,0]],
+        ':': [[0,0,0],[0,1,0],[0,0,0],[0,1,0],[0,0,0]],
     }
     
     if digit in digits:
@@ -2538,207 +2554,213 @@ def draw_digit(draw, digit, x_offset, y_offset):
                 if pixel:
                     draw.point((x_offset + x, y_offset + y), fill="white")
 
-def display_ticker(T_data, PoP_data, scroll_offset):
-    """Display scrolling ticker with 24-hour forecast"""
+def display_ticker(temp_max, temp_min, pop_max, scroll_offset):
+    """Display scrolling ticker: 'HH-LL PP%'"""
+    current_hour = datetime.now().hour
+    brightness = get_brightness_for_time(current_hour)
+    device.contrast(brightness)
+    
+    # Build the message: "28-18 30%"
+    message = f"{temp_max}-{temp_min} {pop_max}%"
+    
+    with canvas(device) as draw:
+        x_pos = 8 - scroll_offset
+        for char in message:
+            if x_pos >= -3 and x_pos < 8:
+                draw_digit(draw, char, x_pos, 1)
+            x_pos += 4
+
+def display_icon(temp_max, temp_min, pop_max, frame):
+    """Display animated weather icon based on 24h forecast"""
     current_hour = datetime.now().hour
     brightness = get_brightness_for_time(current_hour)
     device.contrast(brightness)
     
     with canvas(device) as draw:
-        # Create ticker message
-        # Show next few hours forecast
-        num_hours = min(3, len(T_data))
-        x_pos = 8 - scroll_offset
-        
-        for i in range(num_hours):
-            if i < len(T_data) and i < len(PoP_data):
-                temp = str(int(float(T_data[i]))) if i < len(T_data) else "??"
-                pop = str(int(float(PoP_data[i//2]))) if i//2 < len(PoP_data) else "?"
-                
-                # Draw temperature
-                for char in temp:
-                    if x_pos >= -3 and x_pos < 8:
-                        draw_digit(draw, char, x_pos, 1)
-                    x_pos += 4
-                
-                # Draw degree symbol
-                if x_pos >= -3 and x_pos < 8:
-                    draw_digit(draw, '°', x_pos, 1)
-                x_pos += 3
-                
-                # Space
-                x_pos += 2
-                
-                # Draw precipitation %
-                for char in pop:
-                    if x_pos >= -3 and x_pos < 8:
-                        draw_digit(draw, char, x_pos, 1)
-                    x_pos += 4
-                
-                if x_pos >= -3 and x_pos < 8:
-                    draw_digit(draw, '%', x_pos, 1)
-                x_pos += 4
-                
-                # Separator
-                x_pos += 3
+        if pop_max >= 50:
+            draw_umbrella_icon(draw, frame)
+        elif pop_max >= 20:
+            draw_cloud_icon(draw, frame)
+        else:
+            draw_sun_icon(draw, frame)
 
-def display_heights(bool,heights,PoP_format,IndexCol):
-    # set the brightness level of the LED matrix based on time
+def display_demo(carousel_mode, temp_max, temp_min, pop_max, sec_elapsed, IndexCol, scroll_offset):
+    """Demo/debug mode: scroll a status message showing key state variables"""
+    current_hour = datetime.now().hour
+    brightness = get_brightness_for_time(current_hour)
+    device.contrast(brightness)
+    # Format: "M:3 T:28-18 P:30% C:3" — M: shows actual mode number (3 = demo mode)
+    message = f"M:{carousel_mode} T:{temp_max}-{temp_min} P:{pop_max}% C:{IndexCol}"
+    with canvas(device) as draw:
+        x_pos = 8 - scroll_offset
+        for char in message:
+            if x_pos >= -3 and x_pos < 8:
+                draw_digit(draw, char, x_pos, 1)
+            x_pos += 4
+
+def display_heights(scan_step, heights, PoP_format, IndexCol):
+    """Display bargraph.
+    scan_step 0-7: current column scans bottom-to-top (all others show normal).
+    scan_step >= 8: show full normal bargraph.
+    """
     current_hour = datetime.now().hour
     brightness = get_brightness_for_time(current_hour)
     device.contrast(brightness)
     
-    # display the heights on the LED matrix
     with canvas(device) as draw:
         for i in range(8):
-            if bool and i==IndexCol:
-                continue 
-            height = heights[i]
-            for j in range(height):
-                draw.point((i, 7-j-1), fill="white")
-            if PoP_format[i] == 1:
-                draw.point((i, 7), fill="white")
+            if i == IndexCol and scan_step < 8:
+                # Scan animation: light up rows from bottom (7) upward
+                # scan_step=0 lights row 7 only, scan_step=7 lights all rows
+                for row in range(7, 7 - scan_step - 1, -1):
+                    draw.point((i, row), fill="white")
+            else:
+                # Normal bargraph column
+                height = heights[i]
+                for j in range(height):
+                    draw.point((i, 7-j-1), fill="white")
+                if PoP_format[i] == 1:
+                    draw.point((i, 7), fill="white")
 # START_LOGO()
 
-sec = 60*40*99
+# ---- Main state ----
+sec = UPDATE_INTERVAL_MINS * 60 + 1   # set > interval so first iteration triggers update immediately
 T_format = []
 PoP_format = []
-T_data_raw = []
-PoP_data_raw = []
-carousel_mode = MODE_ANIMATION
-carousel_timer = 0
+T_raw = [22] * 8
+PoP_raw = [20] * 4
+temp_max = 25
+temp_min = 18
+pop_max = 20
+
+carousel_mode = MODE_BARGRAPH
+carousel_timer = 0.0
 animation_frame = 0
 ticker_scroll = 0
+ticker_completed_cycle = False  # ensures ticker always finishes at least one full pass
 
-# TODAY_Date = datetime.now()
+# Scan state for bargraph (replaces old blink_phase)
+# scan_step 0-7 = bottom-to-top scan on current column; >= 8 = normal display
+scan_step = 0
+blink_timer = 0.0
 
-while 1:
+# Demo mode scroll state
+demo_scroll = 0
+demo_completed_cycle = False
+
+IndexCol = 0
+PoPIndexCol = 0
+
+# How many carousel slots: 3 normally, 4 when DEMO_MODE is on
+_NUM_MODES = 4 if DEMO_MODE else 3
+_MODE_NAMES = ['BARGRAPH', 'TICKER', 'ICON', 'DEMO']
+
+while True:
     try:
-        if sec >= 60*40: # 每隔40分鐘更新一次資料
+        # --- Weather data update ---
+        if sec >= UPDATE_INTERVAL_MINS * 60:
             TODAY_Date = datetime.now()
-            # TODAY_Date = datetime.ate + timedelta(hours=0))
             thisHour = TODAY_Date.hour
-            print(str(thisHour))
-            START_LOGO()
-            # Show cute smiley animation while updating data
+            print(f"Updating weather data at {thisHour}:00")
             show_data_update_animation()
-            ArrayData = get_weather_forecast(TODAY_Date)
-            print(ArrayData)
+            result = get_weather_forecast(TODAY_Date)
+            T_format, PoP_format, T_raw, PoP_raw = result
             IndexCol = calculate_output(thisHour)
             PoPIndexCol = calculate_output_forPoP(thisHour)
-            T_format   = shift_array(ArrayData[0],IndexCol)
-            if sec == 60*40*99 or thisHour not in [7,8,9,13,14,15,19,20,21,1,2,3]:
-                PoP_format = shift_array(ArrayData[1],PoPIndexCol)
-            print(T_format)
-            print(PoP_format)
-            sys.stdout.flush()
+            T_format = shift_array(T_format, IndexCol)
+            PoP_format = shift_array(PoP_format, PoPIndexCol)
+            # Calculate max/min temp and max PoP for next 24h
+            if T_raw:
+                temp_max = max(T_raw)
+                temp_min = min(T_raw)
+            if PoP_raw:
+                pop_max = max(PoP_raw)
+            print(f"Temp max={temp_max} min={temp_min}, PoP max={pop_max}%")
+            if DEMO_MODE:
+                print(f"[DEMO] IndexCol={IndexCol} PoPIndexCol={PoPIndexCol} "
+                      f"T_format={T_format} PoP_format={PoP_format}")
             sec = 0
-            
-            # Store raw data for ticker display
-            T_data_raw = []
-            PoP_data_raw = []
-        
-        # Carousel mode switching with proper timing
-        carousel_timer += 1
-        
-        # Special handling for ticker mode - wait for full cycle completion
+
+        # --- Mode switching ---
+        mode_duration = {
+            MODE_BARGRAPH: BARGRAPH_DURATION,
+            MODE_TICKER: TICKER_DURATION,
+            MODE_ICON: ICON_DURATION,
+            MODE_DEMO: TICKER_DURATION,
+        }
+        can_switch = carousel_timer >= mode_duration.get(carousel_mode, TICKER_DURATION)
+        # Ticker and demo modes must complete at least one full scroll cycle first
         if carousel_mode == MODE_TICKER:
-            if ticker_scroll >= TICKER_FULL_CYCLE and carousel_timer >= CAROUSEL_DURATION:
-                carousel_timer = 0
-                carousel_mode = (carousel_mode + 1) % 3
-                ticker_scroll = 0  # Reset ticker scroll
-                print(f"Ticker completed, switching to mode: {['ANIMATION', 'TICKER', 'BARGRAPH'][carousel_mode]}")
-        else:
-            # Normal timing for other modes
-            if carousel_timer >= CAROUSEL_DURATION:
-                carousel_timer = 0
-                carousel_mode = (carousel_mode + 1) % 3
-                ticker_scroll = 0  # Reset ticker scroll
-                print(f"Switching to mode: {['ANIMATION', 'TICKER', 'BARGRAPH'][carousel_mode]}")
-        
-        # Display based on current carousel mode
-        if carousel_mode == MODE_ANIMATION:
-            # Show cute weather animation with smooth transitions
-            animation_frame += 1
-            if len(T_format) > 0 and len(PoP_format) > 0:
-                # Calculate average temperature and precipitation
-                temp_avg = sum(T_format) / len(T_format) * 4 + 12  # Convert back to temperature
-                pop_values = [p for i, p in enumerate(PoP_format) if i % 2 == 0]
-                pop_avg = sum(pop_values) / len(pop_values) * 60 if pop_values else 0
-                draw_weather_animation(temp_avg, pop_avg, animation_frame)
-            time.sleep(0.3)  # Slower, more pleasant animation speed
-            
+            can_switch = can_switch and ticker_completed_cycle
+        if carousel_mode == MODE_DEMO:
+            can_switch = can_switch and demo_completed_cycle
+        if can_switch:
+            carousel_timer = 0.0
+            carousel_mode = (carousel_mode + 1) % _NUM_MODES
+            ticker_scroll = 0
+            ticker_completed_cycle = False
+            demo_scroll = 0
+            demo_completed_cycle = False
+            scan_step = 0
+            blink_timer = 0.0
+            print(f"Switching to mode: {_MODE_NAMES[carousel_mode]}")
+            if DEMO_MODE:
+                print(f"[DEMO] State — temp_max={temp_max} temp_min={temp_min} "
+                      f"pop_max={pop_max}% IndexCol={IndexCol} sec_elapsed={int(sec)}")
+
+        # --- Display current mode ---
+        if carousel_mode == MODE_BARGRAPH:
+            # scan_step 0-7: bottom-to-top scan on current column (BARGRAPH_SCAN_SPEED each step)
+            # scan_step 8: normal full display for BLINK_LONG_SECS, then reset
+            if scan_step < 8:
+                sleep_t = BARGRAPH_SCAN_SPEED
+            else:
+                sleep_t = BLINK_LONG_SECS
+            display_heights(scan_step, T_format, PoP_format, IndexCol)
+            time.sleep(sleep_t)
+            blink_timer += sleep_t
+            carousel_timer += sleep_t
+            sec += sleep_t
+            scan_step += 1
+            if scan_step > 8:   # 8 scan steps (0-7) + 1 normal-display step (8)
+                scan_step = 0
+
         elif carousel_mode == MODE_TICKER:
-            # Show digital ticker with 24-hour forecast
-            # Get raw temperature and precipitation data from API
-            TODAY_Date = datetime.now()
-            try:
-                url_temp = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-061?Authorization={Authorization}&limit=10&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=T'
-                url_pop = f'https://opendata.cwa.gov.tw/api/v1/rest/datastore/F-D0047-091?Authorization={Authorization}&limit=10&LocationName=%E5%A4%A7%E5%AE%89%E5%8D%80&elementName=PoP6h'
-                
-                if not T_data_raw:
-                    response_t = requests.get(url_temp, verify=False, timeout=5)
-                    data_t = response_t.json()
-                    
-                    # Check if temperature data is valid
-                    if (data_t.get("success") == "true" and 
-                        "records" in data_t and 
-                        "Locations" in data_t["records"] and 
-                        len(data_t["records"]["Locations"]) > 0 and
-                        "Location" in data_t["records"]["Locations"][0] and
-                        len(data_t["records"]["Locations"][0]["Location"]) > 0):
-                        T_data_raw = [list(d['ElementValue'][0].values())[0] for d in data_t["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"][:8]]
-                    else:
-                        print("Temperature API returned empty data for ticker, using fallback")
-                        T_data_raw = ['22', '23', '24', '25', '24', '23', '22', '21']
-                
-                if not PoP_data_raw:
-                    response_p = requests.get(url_pop, verify=False, timeout=5)
-                    data_p = response_p.json()
-                    
-                    # Check if precipitation data is valid
-                    if (data_p.get("success") == "true" and 
-                        "records" in data_p and 
-                        "Locations" in data_p["records"] and 
-                        len(data_p["records"]["Locations"]) > 0 and
-                        "Location" in data_p["records"]["Locations"][0] and
-                        len(data_p["records"]["Locations"][0]["Location"]) > 0):
-                        PoP_data_raw = [list(d['ElementValue'][0].values())[0] for d in data_p["records"]["Locations"][0]["Location"][0]["WeatherElement"][0]["Time"][:4]]
-                    else:
-                        print("Precipitation API returned empty data for ticker, using fallback")
-                        PoP_data_raw = ['20', '30', '25', '35']
-                
-                display_ticker(T_data_raw, PoP_data_raw, ticker_scroll)
-                ticker_scroll += 1
-                if ticker_scroll > TICKER_FULL_CYCLE:  # Reset scroll after full cycle
-                    ticker_scroll = TICKER_FULL_CYCLE  # Keep at max to signal completion
-                    
-            except Exception as e:
-                print(f"Ticker error: {e}")
-                # Use fallback data instead of switching modes
-                if not T_data_raw:
-                    T_data_raw = ['22', '23', '24', '25', '24', '23', '22', '21']
-                if not PoP_data_raw:
-                    PoP_data_raw = ['20', '30', '25', '35']
-                display_ticker(T_data_raw, PoP_data_raw, ticker_scroll)
-                ticker_scroll += 1
-                if ticker_scroll > TICKER_FULL_CYCLE:
-                    ticker_scroll = TICKER_FULL_CYCLE
-                
-            time.sleep(0.2)  # Smoother scrolling for better readability
-            
-        elif carousel_mode == MODE_BARGRAPH:
-            # Show original bar graph
-            display_heights(sec%2, T_format, PoP_format, IndexCol)
-            time.sleep(1)
-        
-        sec += 1
-        # TODAY_Date =  (TODAY_Date + timedelta(hours=1))
-        
+            # Build ticker message to calculate total scroll width
+            message = f"{temp_max}-{temp_min} {pop_max}%"
+            ticker_total_width = len(message) * 4 + 8
+            display_ticker(temp_max, temp_min, pop_max, ticker_scroll)
+            ticker_scroll += 1
+            if ticker_scroll >= ticker_total_width:
+                ticker_scroll = 0
+                ticker_completed_cycle = True   # full cycle done; mode switch now allowed
+            time.sleep(TICKER_SCROLL_SPEED)
+            carousel_timer += TICKER_SCROLL_SPEED
+            sec += TICKER_SCROLL_SPEED
+
+        elif carousel_mode == MODE_ICON:
+            animation_frame += 1
+            display_icon(temp_max, temp_min, pop_max, animation_frame)
+            time.sleep(ICON_ANIMATION_SPEED)
+            carousel_timer += ICON_ANIMATION_SPEED
+            sec += ICON_ANIMATION_SPEED
+
+        elif carousel_mode == MODE_DEMO:
+            # Scrolling debug status: only active when DEMO_MODE = True
+            # Message format must match the one built inside display_demo()
+            demo_message = f"M:{carousel_mode} T:{temp_max}-{temp_min} P:{pop_max}% C:{IndexCol}"
+            demo_total_width = len(demo_message) * 4 + 8
+            display_demo(carousel_mode, temp_max, temp_min, pop_max, sec, IndexCol, demo_scroll)
+            demo_scroll += 1
+            if demo_scroll >= demo_total_width:
+                demo_scroll = 0
+                demo_completed_cycle = True
+            time.sleep(TICKER_SCROLL_SPEED)
+            carousel_timer += TICKER_SCROLL_SPEED
+            sec += TICKER_SCROLL_SPEED
+
     except Exception as e:
-        print("An error occurred:", str(e))
+        print(f"Error: {e}")
         time.sleep(1)
-
-    
-
+        sec += 1
 
